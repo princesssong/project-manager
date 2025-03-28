@@ -1,34 +1,40 @@
+// 환경변수 불러오기
+require('dotenv').config();
+
+// 기본 세팅
 const express = require('express');
-const http = require('http');
-const { Server } = require('socket.io');
 const cors = require('cors');
+const http = require('http');
+const socketIO = require('socket.io');
 
 const app = express();
 const server = http.createServer(app);
-const io = new Server(server, {
+const io = socketIO(server, {
   cors: {
-    origin: '*',
+    origin: "*", // 필요시 프론트 주소로 변경
+    methods: ["GET", "POST"]
   }
 });
 
+// 미들웨어 설정
 app.use(cors());
 
-io.on('connection', (socket) => {
-  console.log(`🔌 New user connected: ${socket.id}`);
+// 기본 라우트
+app.get('/', (req, res) => {
+  res.send('Server is running!');
+});
 
-  // ✅ 클라이언트에서 보낸 'chat message' 이벤트 받기
-  socket.on('chat message', ({ user, msg }) => {
-    // 모든 클라이언트(보낸 사람 포함)에게 메시지 전송
-    io.emit('chat message', { user, msg });
-  });
+// 소켓 통신 예시
+io.on('connection', (socket) => {
+  console.log('A user connected');
 
   socket.on('disconnect', () => {
-    console.log(`❌ User disconnected: ${socket.id}`);
+    console.log('User disconnected');
   });
 });
 
-
-const PORT = 4000;
+// 포트 설정
+const PORT = process.env.PORT || 4000;
 server.listen(PORT, () => {
-  console.log(`🚀 Server running on http://localhost:${PORT}`);
+  console.log(`🚀 Server running on port ${PORT}`);
 });
