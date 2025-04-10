@@ -3,7 +3,9 @@ import io from 'socket.io-client';
 import styles from './Chat.module.css';
 
 // 소켓 서버에 연결
-const socket = io("https://project-manager-server-kufd.onrender.com");
+const socket = io("http://localhost:4000");
+
+
 
 // 사용자 이름을 기반으로 랜덤 색상 생성
 function stringToColor(str) {
