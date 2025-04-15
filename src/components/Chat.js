@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom'; // 페이지 이동을 위한 useNavigate
 import io from 'socket.io-client';
 import styles from './Chat.module.css';
 
@@ -26,6 +27,7 @@ function Chat() {
   const [username, setUsername] = useState('');
   const [message, setMessage] = useState('');
   const [chatLog, setChatLog] = useState([]);
+  const navigate = useNavigate(); // 페이지 이동을 위한 훅
 
   // 메시지 수신 처리
   useEffect(() => {
@@ -57,78 +59,51 @@ function Chat() {
 
   let lastDate = null;
 
-  return (
-    <div className={styles.wrapper}>
-      <h2 className={styles.title}>💬 팀 채팅</h2>
+// 회의록 페이지로 이동
+const goToSummaryPage = () => {
+  navigate('/summary'); // /summary 페이지로 이동
+};
 
-      {/* 사용자 이름 입력 */}
-      <div className={styles.username}>
-        <input
-          type="text"
-          placeholder="사용자 이름"
-          value={username}
-          onChange={(e) => setUsername(e.target.value)}
-        />
-      </div>
 
-      {/* 채팅 로그 출력 */}
-      <div className={styles.chatLog}>
-        {chatLog.map((item, idx) => {
-          const isMine = item.user === username;
-          const avatarColor = stringToColor(item.user);
-          const messageDate = item.createdAt?.split('T')[0];
-          const showDate = messageDate !== lastDate;
-          lastDate = messageDate;
+return (
+  <div className={styles.wrapper}>
+    <h2 className={styles.title}>💬 팀 채팅</h2>
 
-          return (
-            <React.Fragment key={idx}>
-              {/* 날짜 구분선 */}
-              {showDate && (
-                <div className={styles.dateSeparator}>
-                  — {formatDate(messageDate)} —
-                </div>
-              )}
-              <div className={`${styles.messageRow} ${isMine ? styles.myMessage : styles.otherMessage}`}>
-                {/* 아바타 표시 */}
-                {!isMine && (
-                  <div className={styles.avatar} style={{ backgroundColor: avatarColor }}>
-                    {item.user[0].toUpperCase()}
-                  </div>
-                )}
-                <div className={styles.messageContent}>
-                  <div className={styles.messageMeta}>
-                    <span className={styles.username}>{item.user}</span>
-                    <span className={styles.time}>{item.time}</span>
-                  </div>
-                  <div className={styles.messageText}>{item.msg}</div>
-                  {/* 내 메시지에만 삭제 버튼 표시 */}
-                  {isMine && (
-                    <button className={styles.deleteBtn} onClick={() => deleteMessage(idx)}>삭제</button>
-                  )}
-                </div>
-              </div>
-            </React.Fragment>
-          );
-        })}
-      </div>
+    {/* 사용자 이름 입력 */}
+    <div className={styles.username}>
+      <input
+        type="text"
+        placeholder="사용자 이름"
+        value={username}
+        onChange={(e) => setUsername(e.target.value)}
+      />
+    </div>
 
-      {/* 메시지 입력창 */}
-      <form onSubmit={sendMessage} className={styles.form}>
-        <textarea
-          rows="1"
-          className={styles.textarea}
-          value={message}
-          onChange={(e) => setMessage(e.target.value)}
-          placeholder="메시지를 입력하세요"
-          onKeyDown={(e) => {
-            if (e.key === 'Enter' && !e.shiftKey) {
-              e.preventDefault();
-              sendMessage(e);
-            }
-          }}
-        />
-        <button type="submit">전송</button>
-      </form>
+    {/* 채팅 로그 출력 */}
+    <div className={styles.chatLog}>
+      {chatLog.map((item, idx) => (
+        <div key={idx} className={styles.messageRow}>
+          <strong>{item.user}</strong>: {item.msg} <em>({item.time})</em>
+        </div>
+      ))}
+    </div>
+
+    {/* 메시지 입력창 */}
+    <form onSubmit={sendMessage} className={styles.form}>
+      <textarea
+        rows="1"
+        className={styles.textarea}
+        value={message}
+        onChange={(e) => setMessage(e.target.value)}
+        placeholder="메시지를 입력하세요"
+      />
+      <button type="submit">전송</button>
+    </form>
+
+     {/* 회의록 페이지로 이동 버튼 */}
+     <button onClick={goToSummaryPage} className={styles.summaryBtn}>
+        회의록 보기
+      </button>
     </div>
   );
 }
