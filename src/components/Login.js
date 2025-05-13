@@ -1,4 +1,5 @@
-import { useState } from "react";
+import React, { useState } from "react";
+import "./Login.css"; 
 
 function Login({ onLogin, onShowRegister }) {
   const [userId, setUserId] = useState("");
@@ -6,6 +7,7 @@ function Login({ onLogin, onShowRegister }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+<<<<<<< HEAD
   
     try {
       const response = await fetch("http://localhost:4000/login", {
@@ -29,22 +31,45 @@ function Login({ onLogin, onShowRegister }) {
       console.error("🚨 오류 발생:", error);
       alert("서버 오류");
     }
+=======
+    onLogin("dummyToken");
+>>>>>>> 29608e6 (UI 개선: 로그인창)
   };
   
 
   return (
-    <div>
-      <h2>로그인</h2>
-      <form onSubmit={handleSubmit}>
-        <input type="text" placeholder="아이디" value={userId} onChange={(e) => setUserId(e.target.value)} required />
-        <input type="password" placeholder="비밀번호" value={password} onChange={(e) => setPassword(e.target.value)} required />
-        <button type="submit">로그인</button>
-      </form>
-      <p>
-        계정이 없나요? <button onClick={onShowRegister}>회원가입</button>
-      </p>
+    <div className="login-bg">
+      <div className="login-card">
+        <div className="login-title">
+          <span role="img" aria-label="말풍선">💬</span>
+          <span>로그인</span>
+        </div>
+        <form onSubmit={handleSubmit} className="login-form">
+          <input
+            type="text"
+            placeholder="아이디"
+            value={userId}
+            onChange={(e) => setUserId(e.target.value)}
+            required
+          />
+          <input
+            type="password"
+            placeholder="비밀번호"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+          />
+          <button type="submit" className="login-btn">로그인</button>
+        </form>
+        <p className="register-text">
+          계정이 없나요?{" "}
+          <button type="button" className="register-btn" onClick={onShowRegister}>
+            회원가입
+          </button>
+        </p>
+      </div>
     </div>
   );
 }
 
-export default Login; // ✅ 여기 확인!!
+export default Login;
