@@ -7,7 +7,6 @@ function Login({ onLogin, onShowRegister }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-<<<<<<< HEAD
   
     try {
       const response = await fetch("http://localhost:4000/login", {
@@ -22,7 +21,8 @@ function Login({ onLogin, onShowRegister }) {
   
       if (response.ok) {
         console.log("✅ 로그인 성공:", data);
-        onLogin(data.token); // 서버가 반환한 토큰을 저장 (예: localStorage에 저장 가능)
+        localStorage.setItem("token", data.token); // JWT 저장
+        onLogin(data.token); // prop 호출로 상위 상태 변경
       } else {
         console.error("❌ 로그인 실패:", data.message);
         alert(data.message || "로그인 실패");
@@ -31,9 +31,6 @@ function Login({ onLogin, onShowRegister }) {
       console.error("🚨 오류 발생:", error);
       alert("서버 오류");
     }
-=======
-    onLogin("dummyToken");
->>>>>>> 29608e6 (UI 개선: 로그인창)
   };
   
 

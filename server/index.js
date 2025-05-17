@@ -16,6 +16,7 @@ const socketIO = require("socket.io");
 const mysql = require("mysql2");
 const { v4: uuidv4 } = require("uuid");
 const bcrypt = require("bcrypt");
+const jwt = require("jsonwebtoken"); // jwt 사용을 위한 import
 
 const app = express();
 const server = http.createServer(app);
@@ -29,6 +30,25 @@ const io = socketIO(server, {
 // 🌐 미들웨어
 app.use(cors());
 app.use(express.json());
+
+// ✅ JWT 토큰 인증 미들웨어
+const authenticateToken = (req, res, next) => {
+  const authHeader = req.headers["authorization"];
+  const token = authHeader && authHeader.split(" ")[1]; // "Bearer <token>" 구조
+
+  if (!token) {
+    return res.status(401).json({ message: "인증 토큰이 제공되지 않았습니다." });
+  }
+
+  jwt.verify(token, process.env.JWT_SECRET, (err, user) => {
+    if (err) {
+      return res.status(403).json({ message: "유효하지 않은 토큰입니다." });
+    }
+
+    req.user = user; // 토큰에서 추출한 사용자 정보 저장
+    next();
+  });
+};
 
 // 🛠️ MySQL 연결 설정
 
@@ -86,7 +106,14 @@ app.post("/login", (req, res) => {
         return res.status(401).json({ message: "비밀번호가 틀렸습니다." });
       }
 
-      return res.status(200).json({ message: "로그인 성공", token: "dummyToken" });
+      // ✅ 토큰 발급
+      const token = jwt.sign(
+        { uid: user.uid, userId: user.user_id },
+        process.env.JWT_SECRET || "defaultSecret",  // .env에 JWT_SECRET 설정 권장
+        { expiresIn: "1h" }
+      );
+
+      return res.status(200).json({ message: "로그인 성공", token });
     });
   });
 });
@@ -133,6 +160,17 @@ app.post("/register", (req, res) => {
   });
 });
 
+
+
+
+
+// 🔐 인증이 필요한 API
+app.get("/protected", authenticateToken, (req, res) => {
+  res.json({
+    message: "✅ 보호된 API 접근 성공",
+    user: req.user, // JWT에서 추출한 사용자 정보
+  });
+});
 
 
 
