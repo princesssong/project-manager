@@ -1,7 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import io from 'socket.io-client';
 
-const socket = io("https://project-manager-server-kufd.onrender.com");
+const socket = io("https://project-manager-server-kufd.onrender.com", {
+  transports: ["websocket"],
+  secure: true,
+});
 function Chat() {
   const [username, setUsername] = useState('');
   const [message, setMessage] = useState('');

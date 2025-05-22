@@ -21,10 +21,9 @@ const io = socketIO(server, {
 app.use(cors());
 
 // 🧪 기본 라우트
-app.get("/", (req, res) => {
-  res.send("Server is running!");
+app.get("/api/something", (req, res) => {
+  res.send("GET도 잘 받았어!");
 });
-
 // 🔌 소켓 통신
 io.on("connection", (socket) => {
   console.log("✅ A user connected");
