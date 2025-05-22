@@ -19,6 +19,7 @@ const io = socketIO(server, {
 
 // 🌐 미들웨어 설정
 app.use(cors());
+app.use(express.json());
 
 // 🧪 기본 라우트
 app.get("/api/something", (req, res) => {
