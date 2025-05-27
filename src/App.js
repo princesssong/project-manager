@@ -14,7 +14,7 @@ function App() {
     try {
       localStorage.setItem("token", token);
 
-      const response = await fetch("http://localhost:4000/protected", {
+      const response = await fetch("https://project-manager-o39c.onrender.com/protected", {
         headers: {
           Authorization: `Bearer ${token}`,
         },
