@@ -28,7 +28,12 @@ const io = socketIO(server, {
 });
 
 // 🌐 미들웨어
-app.use(cors());
+app.use(cors({
+  origin: ["https://project-manager-o39c.onrender.com"], // 또는 여러 도메인도 배열로 가능
+  methods: ["GET", "POST"],
+  credentials: true, // 필요하면 쿠키 등 포함 가능
+}));
+
 app.use(express.json());
 
 // ✅ JWT 토큰 인증 미들웨어

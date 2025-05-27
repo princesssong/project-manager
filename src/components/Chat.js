@@ -3,7 +3,7 @@ import io from 'socket.io-client';
 import styles from './Chat.module.css';
 
 // 소켓 서버에 연결
-const socket = io("http://localhost:4000");
+const socket = io("https://project-manager-o39c.onrender.com");
 
 
 

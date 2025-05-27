@@ -23,7 +23,7 @@ function Register({ onRegister }) {
     }
 
     try {
-      const res = await axios.post("http://localhost:4000/register", {
+      const res = await axios.post("https://project-manager-o39c.onrender.com/register", {
         userId,
         password,
       });
