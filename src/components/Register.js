@@ -27,6 +27,7 @@ function Register({ onRegister }) {
       const res = await axios.post("https://project-manager-o39c.onrender.com/register", {
         userId,
         password,
+        nickname,
       });
 
       const { success, message } = res.data;
