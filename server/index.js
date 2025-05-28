@@ -50,7 +50,7 @@ const { Server } = require('socket.io');
 
 const io = new Server(httpServer, {
   cors: {
-    origin: 'https://project-manager-alpha-fawn.vercel.app/',
+    origin: 'https://project-manager-alpha-fawn.vercel.app',
     methods: ['GET', 'POST'],
     credentials: true,
   }
@@ -122,6 +122,17 @@ const db = mysql.createPool({
 
 console.log("✅ MySQL 풀 생성 완료");
 
+// 👉 연결 확인 코드 추가
+db.getConnection((err, connection) => {
+  if (err) {
+    console.error("❌ MySQL 연결 실패:", err);
+    process.exit(1); // 연결 실패 시 서버 종료
+  } else {
+    console.log("✅ MySQL 연결 성공");
+    connection.release(); // 풀에 연결 반환
+  }
+});
+
 /* MySQL createPool() 사용에 따른 비활성화
 // MySQL 연결
 db.connect((err) => {
@@ -163,7 +174,7 @@ app.post("/login", (req, res) => {
 
       // ✅ 토큰 발급
       const token = jwt.sign(
-        { uid: user.uid, userId: user.user_id },
+        { uid: user.id, userId: user.user_id },
         process.env.JWT_SECRET || "defaultSecret",  // .env에 JWT_SECRET 설정 권장
         { expiresIn: "1h" }
       );
@@ -184,6 +195,11 @@ app.post("/login", (req, res) => {
 app.post("/register", (req, res) => {
   const { userId, password, nickname } = req.body;
 
+  // 👉 입력값 검증 추가
+  if (!userId || !password || !nickname) {
+    return res.status(400).json({ message: "모든 필드를 입력해주세요." });
+  }
+
   console.log(`회원가입 요청 ID: ${userId}`);  // 요청된 userId 확인
 
   const checkSql = "SELECT * FROM users WHERE user_id = ?";
@@ -191,8 +207,6 @@ app.post("/register", (req, res) => {
     if (err) {
       return res.status(500).json({ message: "DB 오류", error: err });
     }
-
-    console.log(`중복 검사 결과: ${result.length > 0 ? "중복 있음" : "중복 없음"}`);
 
     if (result.length > 0) {
       return res.status(400).json({ success: false, message: "이미 존재하는 ID입니다." });
@@ -203,7 +217,7 @@ app.post("/register", (req, res) => {
         return res.status(500).json({ message: "암호화 오류", error: err });
       }
 
-      const insertSql = "INSERT INTO users (uid, user_id, password, nickname) VALUES (?, ?, ?, ?)";
+      const insertSql = "INSERT INTO users (id, user_id, password, nickname) VALUES (?, ?, ?, ?)";
       db.query(insertSql, [uuidv4(), userId, hashedPassword, nickname], (err, result) => {
         if (err) {
           console.error("회원가입 DB 오류:", err);
@@ -215,6 +229,7 @@ app.post("/register", (req, res) => {
     });
   });
 });
+
 
 
 
