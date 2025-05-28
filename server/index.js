@@ -30,11 +30,16 @@ const allowedOrigins = [
   "https://project-manager-git-main-nornsongs-projects.vercel.app"
 ];
 
-const io = socketIO(server, {
+// 소켓 서버 CORS 설정
+const httpServer = require('http').createServer(app);
+const { Server } = require('socket.io');
+
+const io = new Server(httpServer, {
   cors: {
-    origin: allowedOrigins,
-    methods: ["GET", "POST"]
-  },
+    origin: 'https://project-manager-rijzxnlxk-nornsongs-projects.vercel.app',
+    methods: ['GET', 'POST'],
+    credentials: true,
+  }
 });
 
 
