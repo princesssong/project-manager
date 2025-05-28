@@ -11,15 +11,29 @@ console.log("DB_NAME:", process.env.DB_NAME);
 // 📦 기본 설정 
 const express = require("express");
 const cors = require("cors");
-const http = require("http");
-const socketIO = require("socket.io");
 const mysql = require("mysql2");
 const { v4: uuidv4 } = require("uuid");
 const bcrypt = require("bcrypt");
-const jwt = require("jsonwebtoken"); // jwt 사용을 위한 import
+
+// JWT 인증을 위한 라이브러리
+const jwt = require("jsonwebtoken");
+const JWT_SECRET = process.env.JWT_SECRET;
+if (!JWT_SECRET) {
+  console.warn("⚠️ JWT_SECRET이 설정되지 않았습니다. 기본값이 사용됩니다. 운영 환경에서는 반드시 설정해야 합니다.");
+} 
+// jwt 사용을 위한 import
+const tokenIsValid = (token) => {
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET || "defaultSecret");
+    return !!decoded;
+  } catch (err) {
+    console.error("❌ JWT 인증 실패:", err.message);
+    return false;
+  }
+};
+
 
 const app = express();
-const server = http.createServer(app);
 
 // 🌐 미들웨어: CORS 설정
 const allowedOrigins = [
@@ -36,7 +50,7 @@ const { Server } = require('socket.io');
 
 const io = new Server(httpServer, {
   cors: {
-    origin: 'https://project-manager-rijzxnlxk-nornsongs-projects.vercel.app',
+    origin: 'https://project-manager-alpha-fawn.vercel.app/',
     methods: ['GET', 'POST'],
     credentials: true,
   }
@@ -98,12 +112,21 @@ console.log('환경 변수:', process.env);
 
 
 // index.js 수정 예시
-const db = mysql.createConnection({
+const db = mysql.createPool({
   host: process.env.DB_HOST,
   port: 3306,
   user: process.env.DB_USER,
   password: process.env.DB_PASSWORD,
   database: process.env.DB_NAME,
+});
+
+// MySQL 연결
+db.connect((err) => {
+  if (err) {
+    console.error("❌ MySQL 연결 실패:", err);
+    return;
+  }
+  console.log("✅ MySQL 연결 성공");
 });
 
 
@@ -156,7 +179,7 @@ app.post("/login", (req, res) => {
 
 // 비밀번호 해싱 후 DB 저장
 app.post("/register", (req, res) => {
-  const { userId, password } = req.body;
+  const { userId, password, nickname } = req.body;
 
   console.log(`회원가입 요청 ID: ${userId}`);  // 요청된 userId 확인
 
@@ -177,9 +200,10 @@ app.post("/register", (req, res) => {
         return res.status(500).json({ message: "암호화 오류", error: err });
       }
 
-      const insertSql = "INSERT INTO users (uid, user_id, password) VALUES (?, ?, ?)";
-      db.query(insertSql, [uuidv4(), userId, hashedPassword], (err, result) => {
+      const insertSql = "INSERT INTO users (uid, user_id, password, nickname) VALUES (?, ?, ?, ?)";
+      db.query(insertSql, [uuidv4(), userId, hashedPassword, nickname], (err, result) => {
         if (err) {
+          console.error("회원가입 DB 오류:", err);
           return res.status(500).json({ message: "회원가입 실패", error: err });
         }
 
@@ -203,23 +227,46 @@ app.get("/protected", authenticateToken, (req, res) => {
 
 
 
+// JWT 토큰 유효성 검사 함수
+io.use((socket, next) => {
+  const token = socket.handshake.auth.token;
+  if (!token) {
+    console.warn("❌ 소켓 인증 실패: 토큰 없음");
+    return next(new Error("인증 토큰 없음"));
+  }
+
+  if (tokenIsValid(token)) {
+    next();
+  } else {
+    console.warn("❌ 소켓 인증 실패: 유효하지 않은 토큰");
+    next(new Error("인증 실패"));
+  }
+});
+
+
+
 
 // 🔌 소켓 통신
 io.on("connection", (socket) => {
   console.log("✅ A user connected");
 
-  socket.on("chat message", ({ user, msg, time }) => {
-    console.log("📨 Message received:", user, msg, time);
-    io.emit("chat message", { user, msg, time });
+  socket.on("chat message", ({ user, msg, time, createdAt }) => {
+    console.log("📨 Message received:", user, msg, time, createdAt);
+    io.emit("chat message", { user, msg, time, createdAt });
   });
+  
 
   socket.on("disconnect", () => {
     console.log("❌ A user disconnected");
   });
 });
 
+
+
+
+
 // 🚀 서버 실행
 const PORT = process.env.PORT || 4000;
-server.listen(PORT, () => {
+httpServer.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
 });

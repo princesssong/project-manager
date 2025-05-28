@@ -1,9 +1,11 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import io from 'socket.io-client';
 import styles from './Chat.module.css';
 
 // 소켓 서버에 연결
-const socket = io("https://project-manager-o39c.onrender.com");
+
+
+
 
 
 
@@ -26,30 +28,54 @@ function formatDate(dateStr) {
 function Chat({ username }) {
   const [message, setMessage] = useState('');
   const [chatLog, setChatLog] = useState([]);
-  const user = username;
 
+  
+  const socketRef = useRef(); 
 
   // 메시지 수신 처리
   useEffect(() => {
-    socket.on('chat message', ({ user, msg, time, createdAt }) => {
+    socketRef.current = io("https://project-manager-o39c.onrender.com", {
+      transports: ['websocket'],
+      auth: {
+        token: localStorage.getItem("token"), // 예시
+      },
+    });
+
+    socketRef.current.on("connect", () => {
+      console.log("✅ Socket connected:", socketRef.current.id);
+    });
+
+    socketRef.current.on("disconnect", () => {
+      console.warn("❌ Socket disconnected");
+    });
+
+    socketRef.current.on("connect_error", (err) => {
+      console.error("❌ Socket connection error:", err);
+    });
+
+    socketRef.current.on("chat message", ({ user, msg, time, createdAt }) => {
       setChatLog((prev) => [...prev, { user, msg, time, createdAt }]);
     });
 
     return () => {
-      socket.off('chat message');
+      socketRef.current.disconnect();
     };
   }, []);
 
   // 메시지 전송 처리
   const sendMessage = (e) => {
     e.preventDefault();
-    if (message.trim() === '' || !user) return;
-
+    if (message.trim() === '' || !username) return;
 
     const now = new Date();
     const time = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     const createdAt = now.toISOString();
-    socket.emit('chat message', { user: username, msg: message, time, createdAt });
+    socketRef.current.emit('chat message', {
+      user: username,
+      msg: message,
+      time,
+      createdAt,
+    });
     setMessage('');
   };
 

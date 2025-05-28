@@ -9,6 +9,7 @@ function Register({ onRegister }) {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  const [nickname, setNickname] = useState(""); // 닉네임 상태 추가
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -16,7 +17,7 @@ function Register({ onRegister }) {
     setSuccess("");
 
     // 입력값 검증
-    const validationResult = validateInput(userId, password);
+    const validationResult = validateInput(userId, password, nickname);
     if (!validationResult.isValid) {
       setError(validationResult.message);
       return;
@@ -65,6 +66,13 @@ function Register({ onRegister }) {
           placeholder="비밀번호"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
+          required
+        />
+        <input
+          type="text"
+          placeholder="닉네임"
+          value={nickname}
+          onChange={(e) => setNickname(e.target.value)}
           required
         />
         <button type="submit">회원가입</button>
