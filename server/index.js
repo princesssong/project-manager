@@ -28,10 +28,21 @@ const io = socketIO(server, {
 });
 
 // 🌐 미들웨어
+const allowedOrigins = [
+  "https://project-manager-bjbfkciwp-nornsongs-projects.vercel.app", // 정확한 Vercel 도메인
+];
+
 app.use(cors({
-  origin: ["https://project-manager-o39c.onrender.com"], // 또는 여러 도메인도 배열로 가능
+  origin: function (origin, callback) {
+    // 개발 도중 로컬 호출도 허용
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error("CORS 정책에 의해 차단된 Origin입니다: " + origin));
+    }
+  },
   methods: ["GET", "POST"],
-  credentials: true, // 필요하면 쿠키 등 포함 가능
+  credentials: true,
 }));
 
 app.use(express.json());
