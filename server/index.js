@@ -120,6 +120,9 @@ const db = mysql.createPool({
   database: process.env.DB_NAME,
 });
 
+console.log("✅ MySQL 풀 생성 완료");
+
+/* MySQL createPool() 사용에 따른 비활성화
 // MySQL 연결
 db.connect((err) => {
   if (err) {
@@ -127,7 +130,7 @@ db.connect((err) => {
     return;
   }
   console.log("✅ MySQL 연결 성공");
-});
+});*/
 
 
 // ✅ 기본 라우트
