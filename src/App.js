@@ -7,7 +7,8 @@ import Register from "./components/Register";
 import "./styles.css";
 
 function App() {
-  const [token, setToken] = useState(null);
+  const [token, setToken] = useState(localStorage.getItem("token"));
+  const [userId, setUserId] = useState(null);
   const [showRegister, setShowRegister] = useState(false);
 
   const handleLogin = async (token) => {
@@ -21,6 +22,7 @@ function App() {
       });
 
       const data = await response.json();
+      setUserId(data.user.userId); // ✅ 로그인한 사용자 ID 저장
 
       if (!response.ok) {
         throw new Error(data.message || "보호된 API 접근 실패");
@@ -37,6 +39,7 @@ function App() {
   const handleLogout = () => {
     localStorage.removeItem("token");
     setToken(null);
+    setUserId(null); // ✅ userId도 초기화
   };
 
   if (!token) {
@@ -53,10 +56,9 @@ function App() {
       <button onClick={handleLogout}>🚪 로그아웃</button>
       <DarkModeToggle />
       <TaskManager />
-      <Chat />
+      <Chat username={userId} /> {/* ✅ 이 부분 중요! */}
     </div>
   );
 }
-
 
 export default App;

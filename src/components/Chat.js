@@ -23,11 +23,11 @@ function formatDate(dateStr) {
   return date.toLocaleDateString('ko-KR', { weekday: 'short', year: 'numeric', month: 'long', day: 'numeric' });
 }
 
-function Chat() {
-  // 상태 정의
-  const [username, setUsername] = useState('');
+function Chat({ username }) {
   const [message, setMessage] = useState('');
   const [chatLog, setChatLog] = useState([]);
+  const user = username;
+
 
   // 메시지 수신 처리
   useEffect(() => {
@@ -43,7 +43,8 @@ function Chat() {
   // 메시지 전송 처리
   const sendMessage = (e) => {
     e.preventDefault();
-    if (message.trim() === '' || username.trim() === '') return;
+    if (message.trim() === '' || !user) return;
+
 
     const now = new Date();
     const time = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
@@ -62,16 +63,6 @@ function Chat() {
   return (
     <div className={styles.wrapper}>
       <h2 className={styles.title}>💬 팀 채팅</h2>
-
-      {/* 사용자 이름 입력 */}
-      <div className={styles.username}>
-        <input
-          type="text"
-          placeholder="사용자 이름"
-          value={username}
-          onChange={(e) => setUsername(e.target.value)}
-        />
-      </div>
 
       {/* 채팅 로그 출력 */}
       <div className={styles.chatLog}>
