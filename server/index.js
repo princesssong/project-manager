@@ -20,30 +20,38 @@ const jwt = require("jsonwebtoken"); // jwt 사용을 위한 import
 
 const app = express();
 const server = http.createServer(app);
+
+// 🌐 미들웨어: CORS 설정
+const allowedOrigins = [
+  "http://localhost:3000",
+  "https://project-manager-hw3rplts3-nornsongs-projects.vercel.app", // 실제 배포 주소
+  "https://project-manager-alpha-fawn.vercel.app",                  // 도메인 주소들
+  "https://project-manager-nornsongs-projects.vercel.app",
+  "https://project-manager-git-main-nornsongs-projects.vercel.app"
+];
+
 const io = socketIO(server, {
   cors: {
-    origin: "*",
-    methods: ["GET", "POST"],
+    origin: allowedOrigins,
+    methods: ["GET", "POST"]
   },
 });
 
-// 🌐 미들웨어
-const allowedOrigins = [
-  "https://project-manager-bjbfkciwp-nornsongs-projects.vercel.app", // 정확한 Vercel 도메인
-];
 
 app.use(cors({
   origin: function (origin, callback) {
-    // 개발 도중 로컬 호출도 허용
+    // origin이 undefined이면 로컬(또는 테스트 툴 등) → 허용
     if (!origin || allowedOrigins.includes(origin)) {
       callback(null, true);
     } else {
+      console.error("❌ CORS 차단됨 Origin:", origin);
       callback(new Error("CORS 정책에 의해 차단된 Origin입니다: " + origin));
     }
   },
-  methods: ["GET", "POST"],
   credentials: true,
+  methods: ["GET", "POST", "PUT", "DELETE"],
 }));
+
 
 app.use(express.json());
 
