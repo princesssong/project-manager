@@ -2,12 +2,6 @@ import React, { useState, useEffect, useRef } from 'react';
 import io from 'socket.io-client';
 import styles from './Chat.module.css';
 
-// 소켓 서버에 연결
-
-
-
-
-
 
 // 사용자 이름을 기반으로 랜덤 색상 생성
 function stringToColor(str) {
@@ -28,9 +22,25 @@ function formatDate(dateStr) {
 function Chat({ username }) {
   const [message, setMessage] = useState('');
   const [chatLog, setChatLog] = useState([]);
+  const [userMap, setUserMap] = useState({}); // ✅ ID → 닉네임 매핑
 
   
   const socketRef = useRef(); 
+
+  // ✅ userId로 nickname을 불러오는 함수
+  const fetchNickname = async (userId) => {
+    if (userMap[userId]) return; // 이미 불러왔으면 스킵
+
+    try {
+      const res = await fetch(`https://project-manager-o39c.onrender.com/users/${userId}`);
+      const data = await res.json();
+      if (data.nickname) {
+        setUserMap((prev) => ({ ...prev, [userId]: data.nickname }));
+      }
+    } catch (err) {
+      console.error(`❌ 닉네임 조회 실패 (${userId})`, err);
+    }
+  };
 
   // 메시지 수신 처리
   useEffect(() => {
@@ -53,7 +63,9 @@ function Chat({ username }) {
       console.error("❌ Socket connection error:", err);
     });
 
+    // ✅ 메시지 수신 시 닉네임 요청 및 채팅 추가
     socketRef.current.on("chat message", ({ user, msg, time, createdAt }) => {
+      fetchNickname(user);
       setChatLog((prev) => [...prev, { user, msg, time, createdAt }]);
     });
 
@@ -116,7 +128,10 @@ function Chat({ username }) {
                 )}
                 <div className={styles.messageContent}>
                   <div className={styles.messageMeta}>
-                    <span className={styles.username}>{item.user}</span>
+                    {/* ✅ 닉네임으로 보여주기 */}
+                    <span className={styles.username}>
+                      {userMap[item.user] || item.user}
+                    </span>
                     <span className={styles.time}>{item.time}</span>
                   </div>
                   <div className={styles.messageText}>{item.msg}</div>

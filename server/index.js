@@ -174,7 +174,7 @@ app.post("/login", (req, res) => {
 
       // ✅ 토큰 발급
       const token = jwt.sign(
-        { uid: user.id, userId: user.user_id },
+        { uid: user.id, userId: user.user_id, nickname: user.nickname },
         process.env.JWT_SECRET || "defaultSecret",  // .env에 JWT_SECRET 설정 권장
         { expiresIn: "1h" }
       );
@@ -242,6 +242,27 @@ app.get("/protected", authenticateToken, (req, res) => {
     user: req.user, // JWT에서 추출한 사용자 정보
   });
 });
+// 사용자 정보 조회 API
+app.get("/users/:userId", (req, res) => {
+  const { userId } = req.params;
+
+  const sql = "SELECT user_id, nickname FROM users WHERE user_id = ?";
+  db.query(sql, [userId], (err, results) => {
+    if (err) {
+      console.error("❌ 사용자 조회 DB 오류:", err);
+      return res.status(500).json({ message: "DB 오류" });
+    }
+
+    if (results.length === 0) {
+      return res.status(404).json({ message: "사용자를 찾을 수 없습니다" });
+    }
+
+    const user = results[0];
+    res.json({ userId: user.user_id, nickname: user.nickname });
+  });
+});
+
+
 
 
 
