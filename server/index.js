@@ -289,10 +289,26 @@ io.use((socket, next) => {
 io.on("connection", (socket) => {
   console.log("✅ A user connected");
 
-  socket.on("chat message", ({ user, msg, time, createdAt }) => {
-    console.log("📨 Message received:", user, msg, time, createdAt);
-    io.emit("chat message", { user, msg, time, createdAt });
+  socket.on("chat message", ({ user, msg, createdAt, projectId }) => {
+    console.log("📨 Message received:", user, msg, createdAt, projectId);
+  
+    const insertSql = `INSERT INTO Chat (content, timestamp, user_id, project_id) VALUES (?, ?, ?, ?)`;
+  
+    // createdAt이 없으면 현재 시간으로 처리 (MySQL DEFAULT가 있음)
+    const timestamp = createdAt || new Date();
+  
+    db.query(insertSql, [msg, timestamp, user, projectId], (err, result) => {
+      if (err) {
+        console.error("❌ 채팅 저장 실패:", err);
+        // 저장 실패해도 클라이언트에 메시지 전송은 유지할지 결정
+        return;
+      }
+      console.log("✅ 채팅 저장 성공, ID:", result.insertId);
+    });
+  
+    io.emit("chat message", { user, msg, time: timestamp, createdAt: timestamp, projectId });
   });
+  
   
 
   socket.on("disconnect", () => {
