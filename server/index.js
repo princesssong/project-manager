@@ -15,6 +15,19 @@ const mysql = require("mysql2");
 const { v4: uuidv4 } = require("uuid");
 const bcrypt = require("bcrypt");
 
+function formatDateToMySQL(datetime) {
+  const date = new Date(datetime);
+  const yyyy = date.getFullYear();
+  const mm = String(date.getMonth() + 1).padStart(2, "0");
+  const dd = String(date.getDate()).padStart(2, "0");
+  const hh = String(date.getHours()).padStart(2, "0");
+  const mi = String(date.getMinutes()).padStart(2, "0");
+  const ss = String(date.getSeconds()).padStart(2, "0");
+  return `${yyyy}-${mm}-${dd} ${hh}:${mi}:${ss}`;
+}
+
+
+
 // JWT 인증을 위한 라이브러리
 const jwt = require("jsonwebtoken");
 const JWT_SECRET = process.env.JWT_SECRET;
@@ -292,15 +305,13 @@ io.on("connection", (socket) => {
   socket.on("chat message", ({ user, msg, createdAt, projectId }) => {
     console.log("📨 Message received:", user, msg, createdAt, projectId);
   
-    const insertSql = `INSERT INTO Chat (content, timestamp, user_id, project_id) VALUES (?, ?, ?, ?)`;
+    const timestamp = formatDateToMySQL(createdAt || new Date());
   
-    // createdAt이 없으면 현재 시간으로 처리 (MySQL DEFAULT가 있음)
-    const timestamp = createdAt || new Date();
+    const insertSql = `INSERT INTO Chat (content, timestamp, user_id, project_id) VALUES (?, ?, ?, ?)`;
   
     db.query(insertSql, [msg, timestamp, user, projectId], (err, result) => {
       if (err) {
         console.error("❌ 채팅 저장 실패:", err);
-        // 저장 실패해도 클라이언트에 메시지 전송은 유지할지 결정
         return;
       }
       console.log("✅ 채팅 저장 성공, ID:", result.insertId);
@@ -308,6 +319,7 @@ io.on("connection", (socket) => {
   
     io.emit("chat message", { user, msg, time: timestamp, createdAt: timestamp, projectId });
   });
+  
   
   
 
