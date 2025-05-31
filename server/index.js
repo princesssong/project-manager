@@ -309,14 +309,20 @@ io.on("connection", (socket) => {
     const timestamp = formatDateToMySQL(createdAt || new Date());
 
     // 사용자와 프로젝트 존재 여부 확인
-    const userCheckSql = `SELECT id FROM users WHERE id = ?`;
+
+    // 프로젝트 ID가 UUID 형식인지 확인
+    const userCheckSql = `SELECT id FROM users WHERE id = ? OR user_id = ?`;
     const projectCheckSql = `SELECT project_id FROM Project WHERE project_id = ?`;
 
-    db.query(userCheckSql, [user], (userErr, userRows) => {
+    db.query(userCheckSql, [user, user], (userErr, userRows) => {
       if (userErr || userRows.length === 0) {
         console.error("❌ 사용자 없음 또는 에러:", userErr);
         return;
       }
+
+
+      const userIdForInsert = userRows[0].id; // 실제 사용자 ID
+      console.log("✅ 사용자 확인 성공, ID:", userIdForInsert);
 
       db.query(projectCheckSql, [projectId], (projErr, projRows) => {
         if (projErr || projRows.length === 0) {
@@ -327,7 +333,7 @@ io.on("connection", (socket) => {
         // 실제 INSERT
         const insertSql = `INSERT INTO Chat (content, timestamp, user_id, project_id) VALUES (?, ?, ?, ?)`;
 
-        db.query(insertSql, [msg, timestamp, user, projectId], (err, result) => {
+        db.query(insertSql, [msg, timestamp, userIdForInsert, projectId], (err, result) => {
           if (err) {
             console.error("❌ 채팅 저장 실패:", err);
             return;
