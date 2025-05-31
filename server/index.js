@@ -38,11 +38,9 @@ if (!JWT_SECRET) {
 // jwt 사용을 위한 import
 const tokenIsValid = (token) => {
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET || "defaultSecret");
-    return !!decoded;
+    return jwt.verify(token, process.env.JWT_SECRET || "defaultSecret");
   } catch (err) {
-    console.error("❌ JWT 인증 실패:", err.message);
-    return false;
+    return null;
   }
 };
 
@@ -269,7 +267,6 @@ app.post("/register", (req, res) => {
             return res.status(201).json({ success: true, message: "회원가입 성공!" });
           });
         });     
-        return res.status(201).json({ success: true, message: "회원가입 성공!" });
       });
     });
   });
