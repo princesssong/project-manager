@@ -227,7 +227,7 @@ app.post("/login", (req, res) => {
 app.post("/register", (req, res) => {
   const { userId, password, nickname } = req.body;
 
-  // 👉 입력값 검증 추가
+  // 👉 입력값 검증
   if (!userId || !password || !nickname) {
     return res.status(400).json({ message: "모든 필드를 입력해주세요." });
   }
@@ -249,27 +249,29 @@ app.post("/register", (req, res) => {
         return res.status(500).json({ message: "암호화 오류", error: err });
       }
 
-        // 회원가입 성공 후 테스트 프로젝트 자동 참가
-        const newUserId = uuidv4();  // 먼저 생성한 UUID
-        const insertSql = "INSERT INTO users (id, user_id, password, nickname) VALUES (?, ?, ?, ?)";
-        db.query(insertSql, [newUserId, userId, hashedPassword, nickname], (err, result) => {
-          if (err) {
-            console.error("회원가입 DB 오류:", err);
-            return res.status(500).json({ message: "회원가입 실패", error: err });
+      const newUserId = uuidv4();  // UUID 생성
+      const insertSql = "INSERT INTO users (id, user_id, password, nickname) VALUES (?, ?, ?, ?)";
+
+      db.query(insertSql, [newUserId, userId, hashedPassword, nickname], (err) => {
+        if (err) {
+          console.error("회원가입 DB 오류:", err);
+          return res.status(500).json({ message: "회원가입 실패", error: err });
+        }
+
+        // ✅ 테스트 프로젝트 자동 참가
+        const projectInsertSql = "INSERT INTO ProjectUser (project_id, user_id) VALUES (?, ?)";
+        db.query(projectInsertSql, [PROJECT_ID, newUserId], (projErr) => {
+          if (projErr) {
+            console.error("테스트 프로젝트 자동 참가 실패:", projErr);
+            // 실패해도 회원가입은 성공한 것으로 간주
           }
-          // 🔽 테스트 프로젝트 자동 참가
-          const projectInsertSql = "INSERT INTO ProjectUser (user_id, project_id) VALUES (?, ?)";
-          db.query(projectInsertSql, [newUserId, PROJECT_ID], (projErr) => {
-            if (projErr) {
-              console.error("테스트 프로젝트 자동 참가 실패:", projErr);
-              // 실패해도 회원가입은 성공한 것으로 간주
-            }
-            return res.status(201).json({ success: true, message: "회원가입 성공!" });
-          });
-        });     
+
+          return res.status(201).json({ success: true, message: "회원가입 성공!" });
+        });
       });
     });
   });
+});
 
 
 
