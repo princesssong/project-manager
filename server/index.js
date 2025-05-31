@@ -343,7 +343,9 @@ io.on("connection", (socket) => {
     const timestamp = formatDateToMySQL(createdAt || new Date());
   
     // 사용자 확인
-    const userCheckSql = `SELECT id FROM users WHERE id = ? OR user_id = ?`;
+    // user가 user_id일 경우 닉네임 조회
+    const userCheckSql = `SELECT id, nickname FROM users WHERE id = ? OR user_id = ?`;
+
   
     db.query(userCheckSql, [user, user], (userErr, userRows) => {
       if (userErr || userRows.length === 0) {
@@ -374,7 +376,7 @@ io.on("connection", (socket) => {
   
           // 전체 클라이언트에 전송
           io.emit("chat message", {
-            user,
+            user: userRows[0].nickname, // 닉네임이 없으면 user_id 사용
             msg,
             time: timestamp,
             createdAt: timestamp,
