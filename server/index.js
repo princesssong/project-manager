@@ -14,7 +14,7 @@ const cors = require("cors");
 const mysql = require("mysql2");
 const { v4: uuidv4 } = require("uuid");
 const bcrypt = require("bcrypt");
-const PROJECT_ID = "test-project-001"; // 테스트용 프로젝트 ID (실제 사용 시 props로 전달받아야 함)
+const PROJECT_ID = 9999; // 테스트용 프로젝트 ID (실제 사용 시 props로 전달받아야 함)
 
 function formatDateToMySQL(datetime) {
   const date = new Date(datetime);
