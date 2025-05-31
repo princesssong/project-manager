@@ -304,27 +304,29 @@ io.on("connection", (socket) => {
 
   socket.on("chat message", ({ user, msg, createdAt, projectId }) => {
     console.log("📨 Message received:", user, msg, createdAt, projectId);
-  
+
+    // 날짜 포맷 변환
     const timestamp = formatDateToMySQL(createdAt || new Date());
-  
-    // ✅ (1) 사용자 존재 확인
-    const checkUser = `SELECT 1 FROM users WHERE id = ? LIMIT 1`;
-    db.query(checkUser, [user], (err, userResult) => {
-      if (err || userResult.length === 0) {
-        console.error("❌ 존재하지 않는 사용자:", user);
+
+    // 사용자와 프로젝트 존재 여부 확인
+    const userCheckSql = `SELECT id FROM users WHERE id = ?`;
+    const projectCheckSql = `SELECT project_id FROM Project WHERE project_id = ?`;
+
+    db.query(userCheckSql, [user], (userErr, userRows) => {
+      if (userErr || userRows.length === 0) {
+        console.error("❌ 사용자 없음 또는 에러:", userErr);
         return;
       }
 
-      // ✅ (2) 프로젝트 존재 확인
-      const checkProject = `SELECT 1 FROM Project WHERE project_id = ? LIMIT 1`;
-      db.query(checkProject, [projectId], (err, projResult) => {
-        if (err || projResult.length === 0) {
-          console.error("❌ 존재하지 않는 프로젝트:", projectId);
+      db.query(projectCheckSql, [projectId], (projErr, projRows) => {
+        if (projErr || projRows.length === 0) {
+          console.error("❌ 프로젝트 없음 또는 에러:", projErr);
           return;
         }
 
-        // ✅ (3) 조건 통과 후 채팅 저장
+        // 실제 INSERT
         const insertSql = `INSERT INTO Chat (content, timestamp, user_id, project_id) VALUES (?, ?, ?, ?)`;
+
         db.query(insertSql, [msg, timestamp, user, projectId], (err, result) => {
           if (err) {
             console.error("❌ 채팅 저장 실패:", err);
@@ -332,7 +334,7 @@ io.on("connection", (socket) => {
           }
           console.log("✅ 채팅 저장 성공, ID:", result.insertId);
 
-          // ✅ (4) 모든 사용자에게 메시지 전송
+          // 모든 클라이언트에 메시지 전송
           io.emit("chat message", {
             user,
             msg,
@@ -345,23 +347,11 @@ io.on("connection", (socket) => {
     });
   });
 
-
-    /*const insertSql = `INSERT INTO Chat (content, timestamp, user_id, project_id) VALUES (?, ?, ?, ?)`;
-    db.query(insertSql, [msg, timestamp, user, projectId], (err, result) => {
-      if (err) {
-        console.error("❌ 채팅 저장 실패:", err);
-        return;
-      }
-      console.log("✅ 채팅 저장 성공, ID:", result.insertId);
-    });
-  
-    io.emit("chat message", { user, msg, time: timestamp, createdAt: timestamp, projectId });
-  });*/
-
   socket.on("disconnect", () => {
     console.log("❌ A user disconnected");
   });
 });
+
 
 
 

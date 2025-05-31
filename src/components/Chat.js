@@ -23,7 +23,7 @@ function formatDate(dateStr) {
   return date.toLocaleDateString('ko-KR', { weekday: 'short', year: 'numeric', month: 'long', day: 'numeric' });
 }
 
-function Chat({ username, projectId }) {
+function Chat({ userId, nickname, projectId }) {
   const [message, setMessage] = useState('');
   const [chatLog, setChatLog] = useState([]);
   const [userMap, setUserMap] = useState({}); // ✅ ID → 닉네임 매핑
@@ -81,13 +81,13 @@ function Chat({ username, projectId }) {
   // 메시지 전송 처리
   const sendMessage = (e) => {
     e.preventDefault();
-    if (message.trim() === '' || !username) return;
+    if (message.trim() === '' || !userId) return;
 
     const now = new Date();
     const time = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     const createdAt = now.toISOString();
     socketRef.current.emit('chat message', {
-      user: username,
+      user: userId,
       msg: message,
       time,
       createdAt,
@@ -110,7 +110,7 @@ function Chat({ username, projectId }) {
       {/* 채팅 로그 출력 */}
       <div className={styles.chatLog}>
         {chatLog.map((item, idx) => {
-          const isMine = item.user === username;
+          const isMine = item.user === userId;
           const avatarColor = stringToColor(item.user);
           const messageDate = item.createdAt?.split('T')[0];
           const showDate = messageDate !== lastDate;
