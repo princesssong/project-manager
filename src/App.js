@@ -9,7 +9,10 @@ import "./styles.css";
 function App() {
   const [token, setToken] = useState(localStorage.getItem("token"));
   const [userId, setUserId] = useState(null);
+  const [nickname, setNickname] = useState(null);
   const [showRegister, setShowRegister] = useState(false);
+
+  const PROJECT_ID = "test-project-001"; // 테스트용 프로젝트 ID (실제 사용 시 props로 전달받아야 함)
 
   const handleLogin = async (token) => {
     try {
@@ -56,7 +59,7 @@ function App() {
       <button onClick={handleLogout}>🚪 로그아웃</button>
       <DarkModeToggle />
       <TaskManager />
-      <Chat username={userId} /> {/* ✅ 이 부분 중요! */}
+      <Chat userId={userId} nickname={nickname} projectId={PROJECT_ID} />
     </div>
   );
 }
