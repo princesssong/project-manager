@@ -380,7 +380,7 @@ io.on("connection", (socket) => {
             msg,
             time: timestamp,
             createdAt: timestamp,
-            projectId,
+            projectId: 9999,
           });
         });
       });
