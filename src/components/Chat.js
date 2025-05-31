@@ -2,6 +2,10 @@ import React, { useState, useEffect, useRef } from 'react';
 import io from 'socket.io-client';
 import styles from './Chat.module.css';
 
+const TEST_PROJECT_ID = 'test-project-001'; // UUID 또는 고유 문자열이면 OK
+// 테스트용 프로젝트 ID (실제 사용 시 props로 전달받아야 함)
+// const TEST_USERNAME = 'test-user'; // 테스트용 사용자 이름 (실제 사용 시 props로 전달받아야 함)
+
 
 // 사용자 이름을 기반으로 랜덤 색상 생성
 function stringToColor(str) {
@@ -19,7 +23,7 @@ function formatDate(dateStr) {
   return date.toLocaleDateString('ko-KR', { weekday: 'short', year: 'numeric', month: 'long', day: 'numeric' });
 }
 
-function Chat({ username }) {
+function Chat({ username, projectId }) {
   const [message, setMessage] = useState('');
   const [chatLog, setChatLog] = useState([]);
   const [userMap, setUserMap] = useState({}); // ✅ ID → 닉네임 매핑
@@ -87,6 +91,7 @@ function Chat({ username }) {
       msg: message,
       time,
       createdAt,
+      projectId: TEST_PROJECT_ID, // 테스트용 프로젝트 ID
     });
     setMessage('');
   };
