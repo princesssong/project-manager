@@ -14,6 +14,7 @@ const cors = require("cors");
 const mysql = require("mysql2");
 const { v4: uuidv4 } = require("uuid");
 const bcrypt = require("bcrypt");
+const PROJECT_ID = "test-project-001"; // 테스트용 프로젝트 ID (실제 사용 시 props로 전달받아야 함)
 
 function formatDateToMySQL(datetime) {
   const date = new Date(datetime);
@@ -192,6 +193,26 @@ app.post("/login", (req, res) => {
         { expiresIn: "1h" }
       );
 
+      // 로그인 성공 후 테스트 프로젝트 참가 확인 및 삽입
+      const checkProjectSql = "SELECT * FROM ProjectUser WHERE user_id = ? AND project_id = ?";
+      db.query(checkProjectSql, [user.id, PROJECT_ID], (checkErr, rows) => {
+        if (checkErr) {
+          console.error("프로젝트 확인 실패:", checkErr);
+          // 무시하고 로그인은 그대로 진행
+        }
+
+        if (rows.length === 0) {
+          // 참가하지 않았다면 자동으로 추가
+          const insertProjectSql = "INSERT INTO ProjectUser (user_id, project_id) VALUES (?, ?)";
+          db.query(insertProjectSql, [user.id, PROJECT_ID], (insertErr) => {
+            if (insertErr) {
+              console.error("프로젝트 자동 참가 실패:", insertErr);
+            }
+          });
+        }
+      });
+
+
       return res.status(200).json({ message: "로그인 성공", token });
     });
   });
@@ -230,18 +251,28 @@ app.post("/register", (req, res) => {
         return res.status(500).json({ message: "암호화 오류", error: err });
       }
 
-      const insertSql = "INSERT INTO users (id, user_id, password, nickname) VALUES (?, ?, ?, ?)";
-      db.query(insertSql, [uuidv4(), userId, hashedPassword, nickname], (err, result) => {
-        if (err) {
-          console.error("회원가입 DB 오류:", err);
-          return res.status(500).json({ message: "회원가입 실패", error: err });
-        }
-
+        // 회원가입 성공 후 테스트 프로젝트 자동 참가
+        const newUserId = uuidv4();  // 먼저 생성한 UUID
+        const insertSql = "INSERT INTO users (id, user_id, password, nickname) VALUES (?, ?, ?, ?)";
+        db.query(insertSql, [newUserId, userId, hashedPassword, nickname], (err, result) => {
+          if (err) {
+            console.error("회원가입 DB 오류:", err);
+            return res.status(500).json({ message: "회원가입 실패", error: err });
+          }
+          // 🔽 테스트 프로젝트 자동 참가
+          const projectInsertSql = "INSERT INTO ProjectUser (user_id, project_id) VALUES (?, ?)";
+          db.query(projectInsertSql, [newUserId, PROJECT_ID], (projErr) => {
+            if (projErr) {
+              console.error("테스트 프로젝트 자동 참가 실패:", projErr);
+              // 실패해도 회원가입은 성공한 것으로 간주
+            }
+            return res.status(201).json({ success: true, message: "회원가입 성공!" });
+          });
+        });     
         return res.status(201).json({ success: true, message: "회원가입 성공!" });
       });
     });
   });
-});
 
 
 
@@ -304,43 +335,40 @@ io.on("connection", (socket) => {
 
   socket.on("chat message", ({ user, msg, createdAt, projectId }) => {
     console.log("📨 Message received:", user, msg, createdAt, projectId);
-
-    // 날짜 포맷 변환
+  
     const timestamp = formatDateToMySQL(createdAt || new Date());
-
-    // 사용자와 프로젝트 존재 여부 확인
-
-    // 프로젝트 ID가 UUID 형식인지 확인
+  
+    // 사용자 확인
     const userCheckSql = `SELECT id FROM users WHERE id = ? OR user_id = ?`;
-    const projectCheckSql = `SELECT project_id FROM Project WHERE project_id = ?`;
-
+  
     db.query(userCheckSql, [user, user], (userErr, userRows) => {
       if (userErr || userRows.length === 0) {
         console.error("❌ 사용자 없음 또는 에러:", userErr);
         return;
       }
-
-
-      const userIdForInsert = userRows[0].id; // 실제 사용자 ID
-      console.log("✅ 사용자 확인 성공, ID:", userIdForInsert);
-
-      db.query(projectCheckSql, [projectId], (projErr, projRows) => {
+  
+      const userIdForInsert = userRows[0].id;
+  
+      // ✅ ProjectUser 테이블에서 사용자와 프로젝트 참여 여부 확인
+      const projectUserCheckSql = `SELECT project_id FROM ProjectUser WHERE user_id = ? AND project_id = ?`;
+      
+      db.query(projectUserCheckSql, [userIdForInsert, projectId], (projErr, projRows) => {
         if (projErr || projRows.length === 0) {
-          console.error("❌ 프로젝트 없음 또는 에러:", projErr);
+          console.error("❌ 프로젝트 참가자 아님 또는 프로젝트 ID 오류:", projErr);
           return;
         }
-
-        // 실제 INSERT
+  
+        // 🔐 메시지 저장
         const insertSql = `INSERT INTO Chat (content, timestamp, user_id, project_id) VALUES (?, ?, ?, ?)`;
-
+  
         db.query(insertSql, [msg, timestamp, userIdForInsert, projectId], (err, result) => {
           if (err) {
             console.error("❌ 채팅 저장 실패:", err);
             return;
           }
           console.log("✅ 채팅 저장 성공, ID:", result.insertId);
-
-          // 모든 클라이언트에 메시지 전송
+  
+          // 전체 클라이언트에 전송
           io.emit("chat message", {
             user,
             msg,
@@ -352,6 +380,7 @@ io.on("connection", (socket) => {
       });
     });
   });
+  
 
   socket.on("disconnect", () => {
     console.log("❌ A user disconnected");
