@@ -301,7 +301,7 @@ app.get("/users/:userId", (req, res) => {
     }
 
     const user = results[0];
-    res.json({ userId: user.user_id, nickname: user.nickname });
+    res.json({ userId: user.user_id, nickname: user.nickname, projectId: user.project_id });
   });
 });
 
