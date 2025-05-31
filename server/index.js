@@ -332,6 +332,11 @@ io.on("connection", (socket) => {
 
   socket.on("chat message", ({ user, msg, createdAt, projectId }) => {
     console.log("📨 Message received:", user, msg, createdAt, projectId);
+
+    if (!projectId) {
+      console.error("❌ projectId가 제공되지 않았습니다. 메시지 처리 중단");
+      return;
+    }
   
     const timestamp = formatDateToMySQL(createdAt || new Date());
   
