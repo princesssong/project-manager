@@ -266,7 +266,8 @@ app.post("/register", (req, res) => {
             // 실패해도 회원가입은 성공한 것으로 간주
           }
 
-          return res.status(201).json({ success: true, message: "회원가입 성공!" });
+          const token = jwt.sign({ uid: newUserId, userId, nickname }, JWT_SECRET, { expiresIn: "1h" });
+          return res.status(201).json({ success: true, message: "회원가입 성공!", token });
         });
       });
     });
@@ -289,7 +290,7 @@ app.get("/protected", authenticateToken, (req, res) => {
 app.get("/users/:userId", (req, res) => {
   const { userId } = req.params;
 
-  const sql = "SELECT user_id, nickname FROM users WHERE user_id = ?";
+  const sql = "SELECT users.user_id, users.nickname, ProjectUser.project_id FROM users LEFT JOIN ProjectUser ON users.id = ProjectUser.user_id WHERE users.user_id = ? LIMIT 1";
   db.query(sql, [userId], (err, results) => {
     if (err) {
       console.error("❌ 사용자 조회 DB 오류:", err);
@@ -344,10 +345,10 @@ io.on("connection", (socket) => {
   
     // 사용자 확인
     // user가 user_id일 경우 닉네임 조회
-    const userCheckSql = `SELECT id, nickname FROM users WHERE id = ? OR user_id = ?`;
+    const userCheckSql = `SELECT id, nickname FROM users WHERE user_id = ? OR user_id = ?`;
 
   
-    db.query(userCheckSql, [user, user], (userErr, userRows) => {
+    db.query(userCheckSql, [user], (userErr, userRows) => {
       if (userErr || userRows.length === 0) {
         console.error("❌ 사용자 없음 또는 에러:", userErr);
         return;
@@ -365,9 +366,9 @@ io.on("connection", (socket) => {
         }
   
         // 🔐 메시지 저장
-        const insertSql = `INSERT INTO Chat (content, timestamp, user_id, project_id) VALUES (?, ?, ?, ?)`;
+        const insertSql = `INSERT INTO Chat (user, msg, time, createdAt, projectId) VALUES (?, ?, ?, ?, ?)`;
   
-        db.query(insertSql, [msg, timestamp, userIdForInsert, projectId], (err, result) => {
+        db.query(insertSql, [user, msg, timestamp, createdAt, projectId], (err, result) => {
           if (err) {
             console.error("❌ 채팅 저장 실패:", err);
             return;
@@ -380,7 +381,7 @@ io.on("connection", (socket) => {
             msg,
             time: timestamp,
             createdAt: timestamp,
-            projectId: 9999,
+            projectId: projectId,
           });
         });
       });
