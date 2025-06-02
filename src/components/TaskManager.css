@@ -1,0 +1,109 @@
+.task-manager {
+    padding: 16px;
+    font-family: 'Segoe UI', sans-serif;
+  }
+  
+  .task-inputs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    align-items: center;
+    margin-bottom: 16px;
+  }
+  
+  .calendar-wrapper {
+    margin-top: 10px;
+    margin-bottom: 20px;
+    max-width: 350px;
+  }
+  
+  /* 📅 달력 셀 */
+  .react-calendar__tile {
+    height: 60px !important;
+    padding: 6px 0 !important;
+    font-size: 0.9rem;
+    text-align: center;
+    background-color: white !important;
+    border: 2px solid #4a90e2 !important;
+    border-radius: 8px !important;
+    box-sizing: border-box;
+    color: #333 !important;
+  }
+  
+  /* 🌙 이전/다음 달 흐리게 */
+  .react-calendar__month-view__days__day--neighboringMonth {
+    color: #ccc !important;
+    background-color: #f9f9f9 !important;
+    border-color: #ddd !important;
+  }
+  
+  /* 📊 간트 바 */
+  .gantt-bar {
+    height: 6px;
+    margin: 4px auto 0; /* 상단 여백 + 좌우 자동 중앙 정렬 */
+    width: 85%; /* 셀보다 살짝 작게 (기존: 100% or calc) */
+    background-color: #4a90e2;
+  }
+  
+  /* 시작 셀: 왼쪽 둥글게 */
+  .gantt-start {
+    border-top-left-radius: 3px;
+    border-bottom-left-radius: 3px;
+    border-top-right-radius: 0;
+    border-bottom-right-radius: 0;
+  }
+  
+  /* 끝 셀: 오른쪽 둥글게 */
+  .gantt-end {
+    border-top-right-radius: 3px;
+    border-bottom-right-radius: 3px;
+    border-top-left-radius: 0;
+    border-bottom-left-radius: 0;
+  }
+  
+  /* 중간 셀: 직선 */
+  .gantt-middle {
+    border-radius: 0;
+  }
+  
+  /* 작업 리스트 */
+  ul {
+    list-style: none;
+    padding-left: 0;
+  }
+  
+  li {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 12px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    margin-bottom: 8px;
+    background-color: #fff;
+  }
+  
+  .task-name {
+    font-weight: 500;
+  }
+  
+  .task-date-range {
+    color: #888;
+    font-size: 0.85rem;
+    margin-left: 4px;
+  }
+  
+  .delete-btn {
+    margin-left: auto;
+    padding: 4px 12px;
+    background-color: #007bff;
+    color: #fff;
+    font-size: 0.85rem;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+  }
+  .delete-btn:hover {
+    background-color: #0056b3;
+  }
+  

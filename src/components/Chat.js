@@ -1,56 +1,69 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import io from 'socket.io-client';
 import styles from './Chat.module.css';
 
-// 소켓 서버에 연결
 const socket = io("https://project-manager-server-kufd.onrender.com");
 
-// 사용자 이름을 기반으로 랜덤 색상 생성
-function stringToColor(str) {
-  let hash = 0;
-  for (let i = 0; i < str.length; i++) {
-    hash = str.charCodeAt(i) + ((hash << 5) - hash);
-  }
-  const c = (hash & 0x00ffffff).toString(16).toUpperCase();
-  return "#" + "00000".substring(0, 6 - c.length) + c;
+const PROFILE_COLORS = [
+  "#FF6B6B", "#FF8E72", "#FFD166", "#D2FF7C", "#7DFFB3", "#72F0FF",
+  "#A6D1FF", "#BFA6FF", "#FFA6E3", "#FFB6C1", "#A2D5AB", "#F0D9FF",
+  "#FFCD94", "#C2F784", "#86E3CE", "#FF9AA2", "#D5AAFF", "#B9FBC0",
+  "#A0CED9", "#C0B9DD", "#E5EAF5", "#E1F7D5", "#FCD5CE", "#BDE0FE"
+];
+
+function getRandomColor() {
+  const index = Math.floor(Math.random() * PROFILE_COLORS.length);
+  return PROFILE_COLORS[index];
 }
 
-// 날짜 포맷 (예: 2025년 4월 10일 (수))
 function formatDate(dateStr) {
   const date = new Date(dateStr);
   return date.toLocaleDateString('ko-KR', { weekday: 'short', year: 'numeric', month: 'long', day: 'numeric' });
 }
 
 function Chat() {
-  // 상태 정의
   const [username, setUsername] = useState('');
   const [message, setMessage] = useState('');
   const [chatLog, setChatLog] = useState([]);
+  const [userColorMap, setUserColorMap] = useState({});
+  const [userColor, setUserColor] = useState('');
+  const [showColorPicker, setShowColorPicker] = useState(false);
 
-  // 메시지 수신 처리
+  // 이름이 바뀌었을 때 새 색상 지정
+  useEffect(() => {
+    if (!username) return;
+    setUserColorMap((prev) => {
+      if (prev[username]) return prev;
+      const newColor = getRandomColor();
+      setUserColor(newColor);
+      return { ...prev, [username]: newColor };
+    });
+  }, [username]);
+
   useEffect(() => {
     socket.on('chat message', ({ user, msg, time, createdAt }) => {
       setChatLog((prev) => [...prev, { user, msg, time, createdAt }]);
+      setUserColorMap((prevMap) => {
+        if (!prevMap[user]) {
+          return { ...prevMap, [user]: getRandomColor() };
+        }
+        return prevMap;
+      });
     });
-
-    return () => {
-      socket.off('chat message');
-    };
+    return () => socket.off('chat message');
   }, []);
 
-  // 메시지 전송 처리
   const sendMessage = (e) => {
     e.preventDefault();
     if (message.trim() === '' || username.trim() === '') return;
-
     const now = new Date();
     const time = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     const createdAt = now.toISOString();
     socket.emit('chat message', { user: username, msg: message, time, createdAt });
+    setUserColorMap((prev) => ({ ...prev, [username]: userColor }));
     setMessage('');
   };
 
-  // 메시지 삭제 (인덱스 기반)
   const deleteMessage = (index) => {
     setChatLog((prev) => prev.filter((_, i) => i !== index));
   };
@@ -61,7 +74,6 @@ function Chat() {
     <div className={styles.wrapper}>
       <h2 className={styles.title}>💬 팀 채팅</h2>
 
-      {/* 사용자 이름 입력 */}
       <div className={styles.username}>
         <input
           type="text"
@@ -69,39 +81,53 @@ function Chat() {
           value={username}
           onChange={(e) => setUsername(e.target.value)}
         />
+        <button onClick={() => setShowColorPicker(!showColorPicker)} className={styles.colorChangeBtn}>
+          색상 변경
+        </button>
       </div>
 
-      {/* 채팅 로그 출력 */}
+      {showColorPicker && (
+        <div className={styles.colorPicker}>
+          {PROFILE_COLORS.map((color) => (
+            <button
+              key={color}
+              className={styles.colorDot}
+              style={{ backgroundColor: color }}
+              onClick={() => {
+                setUserColor(color);
+                setUserColorMap((prev) => ({ ...prev, [username]: color }));
+                setShowColorPicker(false);
+              }}
+            />
+          ))}
+        </div>
+      )}
+
       <div className={styles.chatLog}>
         {chatLog.map((item, idx) => {
           const isMine = item.user === username;
-          const avatarColor = stringToColor(item.user);
+          const avatarColor = userColorMap[item.user] || getRandomColor();
           const messageDate = item.createdAt?.split('T')[0];
           const showDate = messageDate !== lastDate;
           lastDate = messageDate;
 
           return (
             <React.Fragment key={idx}>
-              {/* 날짜 구분선 */}
               {showDate && (
                 <div className={styles.dateSeparator}>
                   — {formatDate(messageDate)} —
                 </div>
               )}
               <div className={`${styles.messageRow} ${isMine ? styles.myMessage : styles.otherMessage}`}>
-                {/* 아바타 표시 */}
-                {!isMine && (
-                  <div className={styles.avatar} style={{ backgroundColor: avatarColor }}>
-                    {item.user[0].toUpperCase()}
-                  </div>
-                )}
+                <div className={styles.avatar} style={{ backgroundColor: avatarColor }}>
+                  {item.user[0].toUpperCase()}
+                </div>
                 <div className={styles.messageContent}>
                   <div className={styles.messageMeta}>
                     <span className={styles.username}>{item.user}</span>
                     <span className={styles.time}>{item.time}</span>
                   </div>
                   <div className={styles.messageText}>{item.msg}</div>
-                  {/* 내 메시지에만 삭제 버튼 표시 */}
                   {isMine && (
                     <button className={styles.deleteBtn} onClick={() => deleteMessage(idx)}>삭제</button>
                   )}
@@ -112,7 +138,6 @@ function Chat() {
         })}
       </div>
 
-      {/* 메시지 입력창 */}
       <form onSubmit={sendMessage} className={styles.form}>
         <textarea
           rows="1"
