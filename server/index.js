@@ -95,7 +95,7 @@ const authenticateToken = (req, res, next) => {
     return res.status(401).json({ message: "인증 토큰이 제공되지 않았습니다." });
   }
 
-  jwt.verify(token, process.env.JWT_SECRET, (err, user) => {
+  jwt.verify(token, JWT_SECRET, (err, user) => {
     if (err) {
       return res.status(403).json({ message: "유효하지 않은 토큰입니다." });
     }
@@ -126,7 +126,7 @@ console.log('환경 변수:', process.env);
 // index.js 수정 예시
 const db = mysql.createPool({
   host: process.env.DB_HOST,
-  port: 3306,
+  port: process.env.DB_PORT || 3306, // 포트가 설정되지 않은 경우 기본값 3306 사
   user: process.env.DB_USER,
   password: process.env.DB_PASSWORD,
   database: process.env.DB_NAME,
@@ -224,54 +224,32 @@ app.post("/login", (req, res) => {
 
 
 // 비밀번호 해싱 후 DB 저장
-app.post("/register", (req, res) => {
-  const { userId, password, nickname } = req.body;
+app.post("/register", async (req, res) => {
+  const { userID, password, nickname } = req.body;
 
-  // 👉 입력값 검증
-  if (!userId || !password || !nickname) {
-    return res.status(400).json({ message: "모든 필드를 입력해주세요." });
+  if (!userID || !password || !nickname) {
+    return res.status(400).json({ message: "모든 필드를 채워야 합니다." });
   }
 
-  console.log(`회원가입 요청 ID: ${userId}`);  // 요청된 userId 확인
+  try {
+    const hashedPassword = await bcrypt.hash(password, 10);
+    const UUID = uuidv4();
 
-  const checkSql = "SELECT * FROM users WHERE user_id = ?";
-  db.query(checkSql, [userId], (err, result) => {
-    if (err) {
-      return res.status(500).json({ message: "DB 오류", error: err });
-    }
-
-    if (result.length > 0) {
-      return res.status(400).json({ success: false, message: "이미 존재하는 ID입니다." });
-    }
-
-    bcrypt.hash(password, 10, (err, hashedPassword) => {
+    const query = `INSERT INTO User (UUID, userID, password, nickname) VALUES (?, ?, ?, ?)`;
+    db.query(query, [UUID, userID, hashedPassword, nickname], (err, result) => {
       if (err) {
-        return res.status(500).json({ message: "암호화 오류", error: err });
-      }
-
-      const newUserId = uuidv4();  // UUID 생성
-      const insertSql = "INSERT INTO users (id, user_id, password, nickname) VALUES (?, ?, ?, ?)";
-
-      db.query(insertSql, [newUserId, userId, hashedPassword, nickname], (err) => {
-        if (err) {
-          console.error("회원가입 DB 오류:", err);
-          return res.status(500).json({ message: "회원가입 실패", error: err });
+        if (err.code === "ER_DUP_ENTRY") {
+          return res.status(400).json({ message: "이미 존재하는 아이디입니다." });
         }
-
-        // ✅ 테스트 프로젝트 자동 참가
-        const projectInsertSql = "INSERT INTO ProjectUser (project_id, user_id) VALUES (?, ?)";
-        db.query(projectInsertSql, [PROJECT_ID, newUserId], (projErr) => {
-          if (projErr) {
-            console.error("테스트 프로젝트 자동 참가 실패:", projErr);
-            // 실패해도 회원가입은 성공한 것으로 간주
-          }
-
-          const token = jwt.sign({ uid: newUserId, userId, nickname }, JWT_SECRET, { expiresIn: "1h" });
-          return res.status(201).json({ success: true, message: "회원가입 성공!", token });
-        });
-      });
+        console.error(err);
+        return res.status(500).json({ message: "서버 오류" });
+      }
+      res.status(201).json({ message: "회원가입 성공", UUID });
     });
-  });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "서버 오류" });
+  }
 });
 
 
@@ -280,32 +258,91 @@ app.post("/register", (req, res) => {
 
 
 // 🔐 인증이 필요한 API
-app.get("/protected", authenticateToken, (req, res) => {
-  res.json({
-    message: "✅ 보호된 API 접근 성공",
-    user: req.user, // JWT에서 추출한 사용자 정보
-  });
-});
-// 사용자 정보 조회 API
-app.get("/users/:userId", (req, res) => {
-  const { userId } = req.params;
+app.post("/projects", authenticateToken, (req, res) => {
+  const { project_name, description, goal } = req.body;
+  const creator_id = req.user.UUID; // 인증된 사용자 ID를 가져옴
 
-  const sql = "SELECT users.user_id, users.nickname, ProjectUser.project_id FROM users LEFT JOIN ProjectUser ON users.id = ProjectUser.user_id WHERE users.user_id = ? LIMIT 1";
-  db.query(sql, [userId], (err, results) => {
+  if (!project_name || !creator_id) {
+    return res.status(400).json({ message: "프로젝트 이름과 생성자를 입력해야 합니다." });
+  }
+
+  const project_UUID = uuidv4();
+  const query = `INSERT INTO Project (project_UUID, project_name, description, goal, creator_id) VALUES (?, ?, ?, ?, ?)`;
+
+  db.query(query, [project_UUID, project_name, description, goal, creator_id], (err, result) => {
     if (err) {
-      console.error("❌ 사용자 조회 DB 오류:", err);
-      return res.status(500).json({ message: "DB 오류" });
+      if (err.code === "ER_DUP_ENTRY") {
+        return res.status(400).json({ message: "중복된 프로젝트 이름입니다." });
+      }
+      console.error(err);
+      return res.status(500).json({ message: "서버 오류" });
     }
-
-    if (results.length === 0) {
-      return res.status(404).json({ message: "사용자를 찾을 수 없습니다" });
-    }
-
-    const user = results[0];
-    res.json({ userId: user.user_id, nickname: user.nickname, projectId: user.project_id });
+    res.status(201).json({ message: "프로젝트 생성 성공", project_UUID });
   });
 });
 
+// 프로젝트에 사용자 추가
+app.post("/projects/:project_id/users", authenticateToken, (req, res) => {
+  const { project_id } = req.params;
+  const { user_id, role } = req.body;
+
+  if (!project_id || !user_id || !role) {
+    return res.status(400).json({ message: "모든 필드를 입력해야 합니다." });
+  }
+
+  const query = `INSERT INTO ProjectUserList (project_id, user_id, role) VALUES (?, ?, ?)`;
+
+  db.query(query, [project_id, user_id, role], (err, result) => {
+    if (err) {
+      console.error(err);
+      return res.status(500).json({ message: "서버 오류" });
+    }
+    res.status(201).json({ message: "사용자 추가 성공" });
+  });
+});
+
+// 일정 추가
+app.post("/projects/:project_id/schedules", (req, res) => {
+  const { project_id } = req.params;
+  const { name, start_date, end_date } = req.body;
+
+  if (!project_id || !name || !start_date || !end_date) {
+    return res.status(400).json({ message: "모든 필드를 입력해야 합니다." });
+  }
+
+  const schedule_id = uuidv4();
+  const query = `INSERT INTO Schedule (schedule_id, name, start_date, end_date, project_id) VALUES (?, ?, ?, ?, ?)`;
+
+  db.query(query, [schedule_id, name, start_date, end_date, project_id], (err, result) => {
+    if (err) {
+      console.error(err);
+      return res.status(500).json({ message: "서버 오류" });
+    }
+    res.status(201).json({ message: "일정 추가 성공", schedule_id });
+  });
+});
+
+// 채팅 메시지 저장
+app.post("/projects/:project_id/chat", (req, res) => {
+  const { project_id } = req.params;
+  const { content, user_id } = req.body;
+
+  if (!project_id || !content || !user_id) {
+    return res.status(400).json({ message: "모든 필드를 입력해야 합니다." });
+  }
+
+  const UUID = uuidv4();
+  const timestamp = new Date().toISOString();
+  const query = `INSERT INTO Chat (UUID, content, timestamp, user_id, project_id) VALUES (?, ?, ?, ?, ?)`;
+
+  db.query(query, [UUID, content, timestamp, user_id, project_id], (err, result) => {
+    if (err) {
+      console.error(err);
+      return res.status(500).json({ message: "서버 오류" });
+    }
+    res.status(201).json({ message: "채팅 메시지 저장 성공", UUID });
+  });
+});
 
 
 

@@ -1,85 +1,60 @@
-// src/components/Register.js
+import React, { useState } from "react";
 
-import { useState } from "react";
-import axios from "axios";
-import { validateInput } from "../utils/validation";  // validation.js 파일 import
-
-function Register({ onRegister }) {
-  const [userId, setUserId] = useState("");
+function Register() {
+  const [userID, setUserID] = useState("");
   const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
-  const [success, setSuccess] = useState("");
-  const [nickname, setNickname] = useState(""); // 닉네임 상태 추가
+  const [nickname, setNickname] = useState("");
+  const [message, setMessage] = useState("");
 
-  const handleSubmit = async (e) => {
+  const handleRegister = async (e) => {
     e.preventDefault();
-    setError("");
-    setSuccess("");
-
-    // 입력값 검증
-    const validationResult = validateInput(userId, password, nickname);
-    if (!validationResult.isValid) {
-      setError(validationResult.message);
-      return;
-    }
 
     try {
-      const res = await axios.post("https://project-manager-o39c.onrender.com/register", {
-        userId,
-        password,
-        nickname,
+      const response = await fetch("https://project-manager-o39c.onrender.com/register", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ userID, password, nickname }),
       });
 
-      const { success, message } = res.data;
-
-      if (success) {
-        setSuccess("✅ 회원가입 성공!");
-        onRegister(); // 필요 시 로그인 화면으로 이동하는 함수
+      const data = await response.json();
+      if (response.ok) {
+        setMessage("회원가입 성공!");
       } else {
-        // 서버에서 전달된 중복 ID 메시지를 오류로 처리
-        setError("❌ 회원가입 실패: " + (message || "알 수 없는 오류"));
+        setMessage(data.message || "회원가입 실패");
       }
     } catch (err) {
-      console.error("회원가입 요청 중 오류:", err);
-    
-      if (err.response && err.response.data && err.response.data.message) {
-        setError("❌ " + err.response.data.message);
-      } else {
-        setError("❌ 서버 오류로 회원가입에 실패했습니다.");
-      }
+      console.error(err);
+      setMessage("서버 오류");
     }
-    
   };
 
   return (
     <div>
       <h2>회원가입</h2>
-      <form onSubmit={handleSubmit}>
+      <form onSubmit={handleRegister}>
         <input
           type="text"
           placeholder="아이디"
-          value={userId}
-          onChange={(e) => setUserId(e.target.value)}
-          required
+          value={userID}
+          onChange={(e) => setUserID(e.target.value)}
         />
         <input
           type="password"
           placeholder="비밀번호"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
-          required
         />
         <input
           type="text"
           placeholder="닉네임"
           value={nickname}
           onChange={(e) => setNickname(e.target.value)}
-          required
         />
         <button type="submit">회원가입</button>
       </form>
-      {success && <p style={{ color: "green" }}>{success}</p>}
-      {error && <p style={{ color: "red" }}>{error}</p>}
+      {message && <p>{message}</p>}
     </div>
   );
 }

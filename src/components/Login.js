@@ -1,70 +1,54 @@
 import React, { useState } from "react";
-import "./Login.css"; 
 
-function Login({ onLogin, onShowRegister }) {
-  const [userId, setUserId] = useState("");
+function Login() {
+  const [userID, setUserID] = useState("");
   const [password, setPassword] = useState("");
+  const [message, setMessage] = useState("");
 
-  const handleSubmit = async (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
-  
+
     try {
-      const response = await fetch("https://project-manager-o39c.onrender.com/login", {
+      const response = await fetch("http://localhost:3000/login", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ userId, password }),
+        body: JSON.stringify({ userID, password }),
       });
-  
+
       const data = await response.json();
-  
       if (response.ok) {
-        console.log("✅ 로그인 성공:", data);
-        localStorage.setItem("token", data.token); // JWT 저장
-        onLogin(data.token); // prop 호출로 상위 상태 변경
+        localStorage.setItem("token", data.token); // 서버에서 받은 JWT를 저장
+        setMessage("로그인 성공!");
       } else {
-        console.error("❌ 로그인 실패:", data.message);
-        alert(data.message || "로그인 실패");
+        setMessage(data.message || "로그인 실패");
       }
-    } catch (error) {
-      console.error("🚨 오류 발생:", error);
-      alert("서버 오류");
+    } catch (err) {
+      console.error(err);
+      setMessage("서버 오류");
     }
   };
-  
 
   return (
-    <div className="login-bg">
-      <div className="login-card">
-        <div className="login-title">
-          <span role="img" aria-label="말풍선">💬</span>
-          <span>로그인</span>
-        </div>
-        <form onSubmit={handleSubmit} className="login-form">
-          <input
-            type="text"
-            placeholder="아이디"
-            value={userId}
-            onChange={(e) => setUserId(e.target.value)}
-            required
-          />
-          <input
-            type="password"
-            placeholder="비밀번호"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-          />
-          <button type="submit" className="login-btn">로그인</button>
-        </form>
-        <p className="register-text">
-          계정이 없나요?{" "}
-          <button type="button" className="register-btn" onClick={onShowRegister}>
-            회원가입
-          </button>
-        </p>
-      </div>
+    <div>
+      <h2>로그인</h2>
+      <form onSubmit={handleLogin}>
+        <input
+          type="text"
+          placeholder="아이디"
+          value={userID}
+          onChange={(e) => setUserID(e.target.value)}
+        />
+        <input
+          type="password"
+          placeholder="비밀번호"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+        />
+        <button type="submit">로그인</button>
+      </form>
+      {message && <p>{message}</p>}
     </div>
   );
 }
