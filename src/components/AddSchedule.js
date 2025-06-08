@@ -12,7 +12,7 @@ function AddSchedule({ project_id }) {
     const token = localStorage.getItem("token"); // 저장된 JWT 가져오기
 
     try {
-      const response = await fetch(`http://localhost:3000/projects/${project_id}/schedules`, {
+      const response = await fetch(`https://project-manager-o39c.onrender.com/projects/${project_id}/schedules`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
