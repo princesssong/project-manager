@@ -33,7 +33,11 @@ function App() {
       }
 
       console.log("🔐 보호된 API 응답:", data);
+      if (!response.ok) {
+        throw new Error(data.message || "보호된 API 접근 실패");
+      }
       setToken(token);
+      
     } catch (error) {
       console.error("❌ 인증 오류:", error);
       alert("로그인 후 인증 요청 실패");

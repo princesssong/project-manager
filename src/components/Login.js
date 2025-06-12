@@ -26,7 +26,6 @@ function Login() {
         localStorage.setItem("userID", userID);
 
         setMessage("로그인 성공!");
-        navigate("/dashboard");
       } else {
         setMessage(data.message || "아이디 또는 비밀번호가 잘못되었습니다.");
       }
