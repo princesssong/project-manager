@@ -371,20 +371,14 @@ io.on("connection", (socket) => {
   console.log("✅ A user connected");
 
   socket.on("chat message", ({ user, msg, createdAt, projectId }) => {
-    console.log("📨 Message received:", user, msg, createdAt, projectId);
-
     if (!projectId) {
-      console.error("❌ projectId가 제공되지 않았습니다. 메시지 처리 중단");
+      console.error("❌ projectId가 제공되지 않았습니다.");
       return;
     }
   
     const timestamp = formatDateToMySQL(createdAt || new Date());
   
-    // 사용자 확인
-    // user가 user_id일 경우 닉네임 조회
-    const userCheckSql = `SELECT id, nickname FROM users WHERE user_id = ? OR user_id = ?`;
-
-  
+    const userCheckSql = `SELECT id, nickname FROM users WHERE user_id = ?`;
     db.query(userCheckSql, [user], (userErr, userRows) => {
       if (userErr || userRows.length === 0) {
         console.error("❌ 사용자 없음 또는 에러:", userErr);
@@ -393,28 +387,24 @@ io.on("connection", (socket) => {
   
       const userIdForInsert = userRows[0].id;
   
-      // ✅ ProjectUser 테이블에서 사용자와 프로젝트 참여 여부 확인
       const projectUserCheckSql = `SELECT project_id FROM ProjectUser WHERE user_id = ? AND project_id = ?`;
-      
       db.query(projectUserCheckSql, [userIdForInsert, projectId], (projErr, projRows) => {
         if (projErr || projRows.length === 0) {
-          console.error("❌ 프로젝트 참가자 아님 또는 프로젝트 ID 오류:", projErr);
+          console.error("❌ 프로젝트 참가자 아님 또는 오류:", projErr);
           return;
         }
   
-        // 🔐 메시지 저장
-        const insertSql = `INSERT INTO Chat (user, msg, time, createdAt, projectId) VALUES (?, ?, ?, ?, ?)`;
-  
-        db.query(insertSql, [user, msg, timestamp, createdAt, projectId], (err, result) => {
+        const chatUUID = uuidv4();
+        const insertSql = `INSERT INTO Chat (UUID, content, timestamp, user_id, project_id) VALUES (?, ?, ?, ?, ?)`;
+        db.query(insertSql, [chatUUID, msg, timestamp, userIdForInsert, projectId], (err, result) => {
           if (err) {
             console.error("❌ 채팅 저장 실패:", err);
             return;
           }
-          console.log("✅ 채팅 저장 성공, ID:", result.insertId);
+          console.log("✅ 채팅 저장 성공");
   
-          // 전체 클라이언트에 전송
           io.emit("chat message", {
-            user: userRows[0].nickname, // 닉네임이 없으면 user_id 사용
+            user: userRows[0].nickname,
             msg,
             time: timestamp,
             createdAt: timestamp,
@@ -425,16 +415,12 @@ io.on("connection", (socket) => {
     });
   });
   
+  
 
   socket.on("disconnect", () => {
     console.log("❌ A user disconnected");
   });
 });
-
-
-
-
-
 
 // 🚀 서버 실행
 const PORT = process.env.PORT || 4000;
