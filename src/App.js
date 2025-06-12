@@ -4,7 +4,6 @@ import DarkModeToggle from "./components/DarkModeToggle";
 import Chat from "./components/Chat"; 
 import Login from "./components/Login";
 import Register from "./components/Register";
-import Dashboard from "./components/Dashboard"; // 대시보드 컴포넌트
 import "./styles.css";
 
 function App() {
