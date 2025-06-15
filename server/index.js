@@ -30,6 +30,7 @@ app.get("/", (req, res) => {
 });
 
 // 📝 채팅 기록 저장 (메모리 기반, 실제 앱에서는 DB 사용 권장)
+// 테스트를 위한 더미 데이터 실제 기능을 사용하기 위해 빈배열로 바꿔야함
 let chatHistory = [];
 
 // Gemini를 이용한 회의 요약 함수
@@ -37,6 +38,8 @@ async function summarizeChat(chatHistory) {
   const prompt = `다음 채팅 내용을 한두 줄로 회의 요약해줘:\n\n${chatHistory.map(
     chat => `[${chat.time}] ${chat.user}: ${chat.msg}`
   ).join('\n')}\n\n요약:`;
+
+  console.log("Gemini로 보낼 프롬프트:", prompt); // 추가
 
   try {
     const model = gemini.getGenerativeModel({ model: 'gemini-1.5-flash' });
@@ -57,13 +60,16 @@ io.on("connection", (socket) => {
   // 메시지 수신 및 브로드캐스트
   socket.on("chat message", ({ user, msg, time }) => {
     console.log("📨 Message received:", user, msg, time);
+    chatHistory.push({ user, msg, time });
     io.emit("chat message", { user, msg, time }); // 전체 클라이언트에 전송
+    console.log("채팅 저장됨:", chatHistory); // 로그로 저장 확인
   });
 
     // 회의록 요약 요청 처리
   socket.on("generate summary", async (callback) => {
     console.log("✅ [서버] generate summary 요청 도착");
     const recentChatHistory = chatHistory.slice(-10); // 최근 10개만 요약
+    console.log("요약에 사용될 chatHistory:", recentChatHistory); // 추가!
     const summary = await summarizeChat(recentChatHistory);
     callback({ success: true, summary });
   });

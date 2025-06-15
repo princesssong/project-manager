@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import io from 'socket.io-client';
 import styles from './Chat.module.css';
 
-const socket = io("https://project-manager-server-kufd.onrender.com");
+const socket = io("http://localhost:4000");
 
 const PROFILE_COLORS = [
   "#FF6B6B", "#FF8E72", "#FFD166", "#D2FF7C", "#7DFFB3", "#72F0FF",

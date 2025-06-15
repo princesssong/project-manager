@@ -5,6 +5,7 @@ import Chat from "./components/Chat";
 import Login from "./components/Login";  // ✅ 추가
 import Register from "./components/Register"; // ✅ 추가
 import "./styles.css";
+import MeetingSummary from "./components/MeetingSummary";
 
 
 function App() {
@@ -22,7 +23,7 @@ function App() {
   return (
     <div className="app-container">
       <h1>프로젝트 관리 앱</h1>
-      <DarkModeToggle />
+      <DarkModeToggle />   <MeetingSummary />
       <TaskManager />
       <Chat />
     </div>
