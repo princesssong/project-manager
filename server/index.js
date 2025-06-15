@@ -6,6 +6,10 @@ const express = require("express");
 const cors = require("cors");
 const http = require("http");
 const socketIO = require("socket.io");
+const { GoogleGenerativeAI } = require('@google/generative-ai');
+
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY; // 키를 환경변수에서 불러옴
+const gemini = new GoogleGenerativeAI(GEMINI_API_KEY);
 
 // 📡 서버 구성
 const app = express();
@@ -25,6 +29,27 @@ app.get("/", (req, res) => {
   res.send("Server is running!");
 });
 
+// 📝 채팅 기록 저장 (메모리 기반, 실제 앱에서는 DB 사용 권장)
+let chatHistory = [];
+
+// Gemini를 이용한 회의 요약 함수
+async function summarizeChat(chatHistory) {
+  const prompt = `다음 채팅 내용을 한두 줄로 회의 요약해줘:\n\n${chatHistory.map(
+    chat => `[${chat.time}] ${chat.user}: ${chat.msg}`
+  ).join('\n')}\n\n요약:`;
+
+  try {
+    const model = gemini.getGenerativeModel({ model: 'gemini-1.5-flash' });
+    const result = await model.generateContent(prompt);
+    const response = await result.response;
+    const text = await response.text();
+    return text ? text.trim() : "요약 생성 실패";
+  } catch (error) {
+    console.error("서버 에러가 발생했습니다:", error);
+    return "요약 생성 실패";
+  }
+}
+
 // 🔌 소켓 통신
 io.on("connection", (socket) => {
   console.log("✅ A user connected");
@@ -33,6 +58,14 @@ io.on("connection", (socket) => {
   socket.on("chat message", ({ user, msg, time }) => {
     console.log("📨 Message received:", user, msg, time);
     io.emit("chat message", { user, msg, time }); // 전체 클라이언트에 전송
+  });
+
+    // 회의록 요약 요청 처리
+  socket.on("generate summary", async (callback) => {
+    console.log("✅ [서버] generate summary 요청 도착");
+    const recentChatHistory = chatHistory.slice(-10); // 최근 10개만 요약
+    const summary = await summarizeChat(recentChatHistory);
+    callback({ success: true, summary });
   });
 
   socket.on("disconnect", () => {
