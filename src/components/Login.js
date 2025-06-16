@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
-function Login() {
+function Login({ onLogin }) {
   const [userID, setUserID] = useState("");
   const [password, setPassword] = useState("");
   const [message, setMessage] = useState("");
@@ -21,11 +21,11 @@ function Login() {
 
       const data = await response.json();
       if (response.ok) {
-        // 로그인 성공 시 토큰 및 userID 저장
         localStorage.setItem("token", data.token);
         localStorage.setItem("userID", userID);
 
         setMessage("로그인 성공!");
+        onLogin(data.token); // ✅ 부모 컴포넌트(App.js)의 handleLogin 호출
       } else {
         setMessage(data.message || "아이디 또는 비밀번호가 잘못되었습니다.");
       }
@@ -36,7 +36,7 @@ function Login() {
   };
 
   const handleNavigateToRegister = () => {
-    navigate("/register");
+    navigate("/register"); // ✅ React Router 사용한 페이지 이동
   };
 
   return (
