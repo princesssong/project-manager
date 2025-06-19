@@ -51,6 +51,12 @@ app.use(express.json());
 
 
 // 🛠️ MySQL 연결 설정
+const allowedOrigins = [
+  "http://localhost:3000",
+  "http://your-frontend-domain.com",
+  // 허용할 도메인 추가
+];
+
 
 
 
@@ -89,13 +95,17 @@ app.get("/", (req, res) => {
 app.post("/login", (req, res) => {
   const { userId, password } = req.body;
 
-   if (username === "test") {
-    return res.json({ success: true, user: { username: "test" } });
+  // userId가 없으면 에러 반환
+  if (!userId || !password) {
+    return res.status(400).json({ message: "아이디와 비밀번호를 입력해주세요." });
   }
 
-  const sql = "SELECT * FROM users WHERE user_id = ?";
+  const sql = "SELECT * FROM user WHERE userID = ?";
   db.query(sql, [userId], (err, results) => {
-    if (err) return res.status(500).json({ message: "DB 오류" });
+    if (err) {
+      console.error("❌ 로그인 쿼리 오류:", err);
+      return res.status(500).json({ message: "DB 오류" });
+    }
 
     if (results.length === 0) {
       return res.status(401).json({ message: "존재하지 않는 사용자입니다." });
@@ -104,17 +114,29 @@ app.post("/login", (req, res) => {
     const user = results[0];
 
     bcrypt.compare(password, user.password, (err, isMatch) => {
-      if (err) return res.status(500).json({ message: "비밀번호 확인 오류" });
+      if (err) {
+        console.error("❌ 비밀번호 비교 오류:", err);
+        return res.status(500).json({ message: "비밀번호 확인 오류" });
+      }
 
       if (!isMatch) {
         return res.status(401).json({ message: "비밀번호가 틀렸습니다." });
       }
 
-      return res.status(200).json({ message: "로그인 성공", token: "dummyToken" });
+      // 로그인 성공 → 토큰 또는 사용자 정보 응답
+      return res.status(200).json({
+        message: "로그인 성공",
+        token: "dummyToken", // TODO: 나중에 JWT로 교체 가능
+        user: {
+          uuid: user.UUID,
+          userId: user.userID,
+          nickname: user.nickname,
+        }
+      });
     });
   });
-  return res.json({ success: false, message: "로그인 실패" });
 });
+
 
 
 
@@ -127,15 +149,16 @@ app.post("/login", (req, res) => {
 app.post("/register", (req, res) => {
   const { userId, password } = req.body;
 
-  console.log(`회원가입 요청 ID: ${userId}`);  // 요청된 userId 확인
+  if (!userId || !password) {
+    return res.status(400).json({ message: "아이디와 비밀번호를 모두 입력해주세요." });
+  }
 
-  const checkSql = "SELECT * FROM users WHERE user_id = ?";
+  const checkSql = "SELECT * FROM user WHERE userID = ?";
   db.query(checkSql, [userId], (err, result) => {
     if (err) {
+      console.error("❌ DB 오류:", err);
       return res.status(500).json({ message: "DB 오류", error: err });
     }
-
-    console.log(`중복 검사 결과: ${result.length > 0 ? "중복 있음" : "중복 없음"}`);
 
     if (result.length > 0) {
       return res.status(400).json({ success: false, message: "이미 존재하는 ID입니다." });
@@ -143,12 +166,15 @@ app.post("/register", (req, res) => {
 
     bcrypt.hash(password, 10, (err, hashedPassword) => {
       if (err) {
+        console.error("❌ 비밀번호 해싱 오류:", err);
         return res.status(500).json({ message: "암호화 오류", error: err });
       }
 
-      const insertSql = "INSERT INTO users (uid, user_id, password) VALUES (?, ?, ?)";
-      db.query(insertSql, [uuidv4(), userId, hashedPassword], (err, result) => {
+      const uuid = uuidv4();
+      const insertSql = "INSERT INTO user (UUID, userID, password) VALUES (?, ?, ?)";
+      db.query(insertSql, [uuid, userId, hashedPassword], (err, result) => {
         if (err) {
+          console.error("❌ 회원가입 실패:", err);
           return res.status(500).json({ message: "회원가입 실패", error: err });
         }
 
@@ -157,6 +183,9 @@ app.post("/register", (req, res) => {
     });
   });
 });
+
+
+
 
 
 
