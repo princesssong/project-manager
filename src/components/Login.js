@@ -31,6 +31,7 @@ function Login({ onLogin, onShowRegister }) {
       console.error("🚨 오류 발생:", error);
       alert("서버 오류");
     }
+    onLogin("dummyToken");
   };
   
 

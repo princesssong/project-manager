@@ -5,6 +5,7 @@ import Chat from "./components/Chat";
 import Login from "./components/Login";
 import Register from "./components/Register";
 import "./styles.css";
+import MeetingSummary from "./components/MeetingSummary";
 
 function App() {
   const [token, setToken] = useState(localStorage.getItem("token"));
@@ -55,6 +56,7 @@ function App() {
       <h1>프로젝트 관리 앱</h1>
       <button onClick={handleLogout}>🚪 로그아웃</button>
       <DarkModeToggle />
+      <DarkModeToggle />   <MeetingSummary />
       <TaskManager />
       <Chat username={userId} /> {/* ✅ 이 부분 중요! */}
     </div>
