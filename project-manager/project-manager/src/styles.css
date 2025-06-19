@@ -1,0 +1,111 @@
+/* ===== 기본 모드 ===== */
+body {
+    background-color: #fff;
+    color: #1a1a1a;
+    font-family: Arial, sans-serif;
+    transition: background 0.3s, color 0.3s;
+}
+
+.app-container {
+    text-align: center;
+    margin: 20px auto;
+    background: #fff;
+    color: #1a1a1a;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+    padding: 24px;
+    max-width: 800px;
+    transition: background 0.3s, color 0.3s;
+}
+
+/* 작업 목록(TaskManager) */
+.task-manager {
+    margin: 24px auto;
+    max-width: 600px;
+}
+
+.task-manager ul {
+    list-style: none;
+    padding: 0;
+}
+
+.task-manager li {
+    display: flex;
+    justify-content: space-between;
+    padding: 8px;
+    border: 1px solid #ccc;
+    margin: 5px 0;
+    background-color: #fff;
+    color: #1a1a1a;
+    border-radius: 6px;
+    transition: background 0.3s, color 0.3s, border 0.3s;
+}
+
+.task-manager input[type="text"] {
+    padding: 8px;
+    margin-right: 10px;
+    border: 1px solid #ccc;
+    background-color: #fff;
+    color: #1a1a1a;
+    border-radius: 6px;
+    transition: background 0.3s, color 0.3s, border 0.3s;
+}
+
+.task-manager button {
+    padding: 5px 12px;
+    border: none;
+    background-color: #007bff;
+    color: #fff;
+    cursor: pointer;
+    border-radius: 6px;
+    transition: background 0.3s, color 0.3s;
+}
+
+.task-manager button:hover {
+    opacity: 0.85;
+    background-color: #0056b3;
+}
+
+/* ===== 다크모드 ===== */
+body.dark-mode {
+    background: #18191c;
+    color: #f3f3f3;
+}
+
+body.dark-mode .app-container {
+    background: #23272a;
+    color: #f3f3f3;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.3);
+}
+
+body.dark-mode .task-manager {
+    background: #23272a !important;
+    color: #f3f3f3 !important;
+}
+
+body.dark-mode .task-manager li {
+    background: #2c2f34 !important;
+    color: #f3f3f3 !important;
+    border: 1px solid #444 !important;
+}
+
+body.dark-mode .task-manager input[type="text"] {
+    background: #2c2f34 !important;
+    color: #f3f3f3 !important;
+    border: 1px solid #444 !important;
+}
+
+body.dark-mode .task-manager input[type="text"]::placeholder {
+    color: #aaa !important;
+}
+
+body.dark-mode .task-manager button {
+    background: #5865f2 !important;
+    color: #fff !important;
+    border: none !important;
+}
+
+body.dark-mode .task-manager button:hover {
+    background: #4752c4 !important;
+    opacity: 0.85;
+}
