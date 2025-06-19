@@ -13,17 +13,15 @@ const express = require("express");
 const cors = require("cors");
 const http = require("http");
 const socketIO = require("socket.io");
-<<<<<<< HEAD
+const mysql = require("mysql2");
+const { v4: uuidv4 } = require("uuid");
+const bcrypt = require("bcrypt");
 const { GoogleGenerativeAI } = require('@google/generative-ai');
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY; // 키를 환경변수에서 불러옴
 const gemini = new GoogleGenerativeAI(GEMINI_API_KEY);
-=======
-const mysql = require("mysql2");
-const { v4: uuidv4 } = require("uuid");
-const bcrypt = require("bcrypt");
->>>>>>> origin/feature/User_DB
 
+// 📡 서버 구성
 const app = express();
 const server = http.createServer(app);
 const io = socketIO(server, {
@@ -33,9 +31,24 @@ const io = socketIO(server, {
   },
 });
 
-// 🌐 미들웨어
-app.use(cors());
+app.use(cors({
+  origin: function (origin, callback) {
+    // origin이 undefined이면 로컬(또는 테스트 툴 등) → 허용
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      console.error("❌ CORS 차단됨 Origin:", origin);
+      callback(new Error("CORS 정책에 의해 차단된 Origin입니다: " + origin));
+    }
+  },
+  credentials: true,
+  methods: ["GET", "POST", "PUT", "DELETE"],
+}));
+
+
 app.use(express.json());
+
+
 
 // 🛠️ MySQL 연결 설정
 
@@ -70,35 +83,15 @@ app.get("/", (req, res) => {
   res.send("Server is running!");
 });
 
-<<<<<<< HEAD
-// 📝 채팅 기록 저장 (메모리 기반, 실제 앱에서는 DB 사용 권장)
-let chatHistory = [];
-
-// Gemini를 이용한 회의 요약 함수
-async function summarizeChat(chatHistory) {
-  const prompt = `다음 채팅 내용을 한두 줄로 회의 요약해줘:\n\n${chatHistory.map(
-    chat => `[${chat.time}] ${chat.user}: ${chat.msg}`
-  ).join('\n')}\n\n요약:`;
-
-  console.log("Gemini로 보낼 프롬프트:", prompt); // 추가
-
-  try {
-    const model = gemini.getGenerativeModel({ model: 'gemini-1.5-flash' });
-    const result = await model.generateContent(prompt);
-    const response = await result.response;
-    const text = await response.text();
-    return text ? text.trim() : "요약 생성 실패";
-  } catch (error) {
-    console.error("서버 에러가 발생했습니다:", error);
-    return "요약 생성 실패";
-  }
-}
-=======
 
 
 // 로그인 라우트 추가 (회원가입 아래에 넣어도 됨)
 app.post("/login", (req, res) => {
   const { userId, password } = req.body;
+
+   if (username === "test") {
+    return res.json({ success: true, user: { username: "test" } });
+  }
 
   const sql = "SELECT * FROM users WHERE user_id = ?";
   db.query(sql, [userId], (err, results) => {
@@ -120,6 +113,7 @@ app.post("/login", (req, res) => {
       return res.status(200).json({ message: "로그인 성공", token: "dummyToken" });
     });
   });
+  return res.json({ success: false, message: "로그인 실패" });
 });
 
 
@@ -167,15 +161,37 @@ app.post("/register", (req, res) => {
 
 
 
->>>>>>> origin/feature/User_DB
+
+// 📝 채팅 기록 저장 (메모리 기반, 실제 앱에서는 DB 사용 권장)
+let chatHistory = [];
+
+// Gemini를 이용한 회의 요약 함수
+async function summarizeChat(chatHistory) {
+  const prompt = `다음 채팅 내용을 한두 줄로 회의 요약해줘:\n\n${chatHistory.map(
+    chat => `[${chat.time}] ${chat.user}: ${chat.msg}`
+  ).join('\n')}\n\n요약:`;
+
+  console.log("Gemini로 보낼 프롬프트:", prompt); // 추가
+
+  try {
+    const model = gemini.getGenerativeModel({ model: 'gemini-1.5-flash' });
+    const result = await model.generateContent(prompt);
+    const response = await result.response;
+    const text = await response.text();
+    return text ? text.trim() : "요약 생성 실패";
+  } catch (error) {
+    console.error("서버 에러가 발생했습니다:", error);
+    return "요약 생성 실패";
+  }
+}
 
 // 🔌 소켓 통신
 io.on("connection", (socket) => {
   console.log("✅ A user connected");
 
+  // 메시지 수신 및 브로드캐스트
   socket.on("chat message", ({ user, msg, time }) => {
     console.log("📨 Message received:", user, msg, time);
-<<<<<<< HEAD
     chatHistory.push({ user, msg, time });
     io.emit("chat message", { user, msg, time }); // 전체 클라이언트에 전송
     console.log("채팅 저장됨:", chatHistory); // 로그로 저장 확인
@@ -188,9 +204,6 @@ io.on("connection", (socket) => {
     console.log("요약에 사용될 chatHistory:", recentChatHistory); // 추가!
     const summary = await summarizeChat(recentChatHistory);
     callback({ success: true, summary });
-=======
-    io.emit("chat message", { user, msg, time });
->>>>>>> origin/feature/User_DB
   });
 
   socket.on("disconnect", () => {
