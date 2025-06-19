@@ -60,7 +60,9 @@ const allowedOrigins = [
   "https://project-manager-hw3rplts3-nornsongs-projects.vercel.app", // 실제 배포 주소
   "https://project-manager-alpha-fawn.vercel.app",                  // 도메인 주소들
   "https://project-manager-nornsongs-projects.vercel.app",
-  "https://project-manager-git-main-nornsongs-projects.vercel.app"
+  "https://project-manager-git-main-nornsongs-projects.vercel.app",
+  "project-manager-kxb6b8w31-nornsongs-projects.vercel.app",
+  "project-manager-git-feature-interim-check-nornsongs-projects.vercel.app"
 ];
 
 // 소켓 서버 CORS 설정

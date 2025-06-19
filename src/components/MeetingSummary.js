@@ -1,8 +1,10 @@
 import React, { useState } from "react";
 import io from "socket.io-client";
 
-const socket = io("http://localhost:4000");
-
+const socket = io("https://project-manager-o39c.onrender.com", {
+  withCredentials: true,
+  transports: ["websocket"],
+});
 function MeetingSummary() {
   const [summary, setSummary] = useState("");
   const [loading, setLoading] = useState(false);
